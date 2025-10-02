@@ -17,8 +17,11 @@ st.set_page_config(
     layout="wide",
 )
 
+# FIX: remove deprecated use_container_width
 if LOGO.exists():
-    st.sidebar.image(str(LOGO))
+    st.sidebar.image(str(LOGO), width=200)
+else:
+    st.sidebar.info("找不到 logo.png（請放在專案根目錄）。")
 
 FONT_NAME = "NotoSansTC"
 if FONT.exists():
@@ -40,8 +43,8 @@ try:
         gclient = gspread.authorize(creds)
         INTEGRATIONS["has_gsheet"] = True
         INTEGRATIONS["sheet_id"] = st.secrets["SHEET_ID"]
-except Exception:
-    pass
+except Exception as e:
+    st.sidebar.warning("⚠️ Google Sheets 尚未設定或金鑰有誤（目前以離線模式運作）。")
 
 try:
     if "SENDGRID_API_KEY" in st.secrets and st.secrets["SENDGRID_API_KEY"]:
@@ -50,8 +53,8 @@ try:
         INTEGRATIONS["has_sendgrid"] = True
     if "NOTIFY_EMAIL" in st.secrets and st.secrets["NOTIFY_EMAIL"]:
         INTEGRATIONS["notify_email"] = st.secrets["NOTIFY_EMAIL"]
-except Exception:
-    pass
+except Exception as e:
+    st.sidebar.warning("⚠️ Email 通知尚未設定（會提供 mailto 傳送）。")
 
 def append_row(sheet_title: str, row: list):
     if not INTEGRATIONS["has_gsheet"]:
@@ -73,22 +76,25 @@ def send_email(subject: str, html: str):
         return False, "EMAIL_DISABLED"
     try:
         sg = SendGridAPIClient(st.secrets["SENDGRID_API_KEY"])
-        message = Mail(from_email=INTEGRATIONS["notify_email"], to_emails=INTEGRATIONS["notify_email"], subject=subject, html_content=html)
+        message = Mail(from_email=INTEGRATIONS["notify_email"], to_emails=INTEGRATIONS["notify_email"],
+                       subject=subject, html_content=html)
         resp = sg.send(message)
         return True, f"Status {resp.status_code}"
     except Exception as e:
         return False, str(e)
 
-st.markdown(f'''
-<div style="padding:24px;border-radius:24px;background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);border:1px solid rgba(15,23,42,0.12)">
-  <div style="display:flex;align-items:center;gap:12px;">
-    {f'<img src="{LOGO.as_posix()}" alt="logo" style="height:36px;border-radius:8px"/>' if LOGO.exists() else ''}
-    <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#4f46e5;color:#fff;font-size:12px">永傳家族傳承導師</span>
-  </div>
-  <h1 style="margin:12px 0 8px 0;font-size:28px;line-height:1.2">AI × 財稅 × 傳承：<br/>您的「數位家族辦公室」入口</h1>
-  <p style="color:#475569;margin:0">以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。<br/>我們不推商品，只推動「讓重要的人真的被照顧到」。</p>
-</div>
-''', unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div style="padding:24px;border-radius:24px;background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);border:1px solid rgba(15,23,42,0.12)">
+      <div style="display:flex;align-items:center;gap:12px;">
+        {f'<img src="{LOGO.as_posix()}" alt="logo" style="height:36px;border-radius:8px"/>' if LOGO.exists() else ''}
+        <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#4f46e5;color:#fff;font-size:12px">永傳家族傳承導師</span>
+      </div>
+      <h1 style="margin:12px 0 8px 0;font-size:28px;line-height:1.2">AI × 財稅 × 傳承：<br/>您的「數位家族辦公室」入口</h1>
+      <p style="color:#475569;margin:0">以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。<br/>我們不推商品，只推動「讓重要的人真的被照顧到」。</p>
+    </div>
+    """, unsafe_allow_html=True
+)
 
 c1, c2, c3 = st.columns(3)
 c1.metric("快速掌握傳承全貌", "約 7 分鐘")
@@ -139,7 +145,6 @@ with tab2:
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
-        w, h = A4
 
         def line(text, size=12, gap=18, bold=False):
             font = FONT_NAME if FONT.exists() else ("Helvetica-Bold" if bold else "Helvetica")
@@ -149,7 +154,7 @@ with tab2:
                 c.drawString(60, y, seg)
                 y -= gap
             line.y = y
-        line.y = h - 72
+        line.y = A4[1] - 72
 
         c.setTitle("永傳｜傳承快照")
         line("永傳影響力傳承平台｜傳承快照", 16, 24, bold=True)

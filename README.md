@@ -1,8 +1,6 @@
-# 永傳影響力傳承平台（Streamlit｜統合版）
+# 永傳影響力傳承平台（Streamlit｜統合版｜已修正 use_container_width）
 
-- ✅ 品牌：logo（logo.png）、favicon（logo2.png）、PDF 繁中（NotoSansTC-Regular.ttf）
-- ✅ Google Sheets 收件、SendGrid Email 通知（透過 secrets 啟用）
-- ✅ 傳承快照 PDF、預約表單
+此版本修正了 `st.image(..., use_container_width=True)` 在新版本 Streamlit 造成的 TypeError，改為 `width=200`，可直接部署。
 
 ## 使用
 ```bash
