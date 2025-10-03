@@ -39,7 +39,6 @@ st.set_page_config(
 # ----------------------------
 st.markdown("""
 <style>
-/* Tabs：未選／已選 */
 button[role="tab"]{
   background:#f1f5f9; color:#1e293b; font-weight:600;
   padding:6px 12px; border-radius:8px 8px 0 0; margin-right:4px; border:0;
@@ -47,17 +46,14 @@ button[role="tab"]{
 button[role="tab"][aria-selected="true"]{
   background:#2563eb !important; color:#fff !important;
 }
-/* Metrics */
 div[data-testid="stMetricValue"]{font-size:20px !important; font-weight:700 !important; color:#1e40af !important;}
 div[data-testid="stMetricLabel"]{font-size:18px !important; font-weight:700 !important; color:#1e293b !important;}
-/* Buttons */
 div.stButton > button:first-child, div.stDownloadButton > button{
   background:#2563eb; color:#fff; border-radius:8px; padding:.5em 1em; font-weight:600;
 }
 div.stButton > button:first-child:hover, div.stDownloadButton > button:hover{
   background:#1d4ed8; color:#fff;
 }
-/* Select */
 div[data-baseweb="select"] > div{ border-radius:8px; }
 </style>
 """, unsafe_allow_html=True)
@@ -194,7 +190,6 @@ with tab1:
     shares = {}
     if heirs:
         if "子女" in heirs:
-            # 配偶與子女均分
             total_persons = children_count + (1 if has_spouse else 0)
             if total_persons > 0:
                 if has_spouse:
@@ -259,7 +254,6 @@ with tab1:
 
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
 
-    # ▾ 稅額計算明細（放在預估稅額正下方；預設縮合）
     with st.expander("查看遺產稅計算明細", expanded=False):
         st.write(f"- 輸入總資產：{total_wan:,} 萬 ＝ NT$ {estate:,.0f}")
         st.write(f"- 扣除額合計：{deduction_wan:,} 萬 ＝ NT$ {deductions:,.0f}")
@@ -271,11 +265,10 @@ with tab1:
         if part3: st.write(part3)
         st.write("— — —")
         st.write(f"＝ 預估遺產稅額：NT$ {tax:,.0f}")
-
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
-# Tab2: 傳承快照 PDF（左上 Logo；內容最後暖心收尾；頁腳版權）
+# Tab2: 傳承快照 PDF（左上 Logo 穩定嵌入；內容最後暖心收尾；頁腳版權）
 # ============================================================
 with tab2:
     st.caption("快速點選＋輸入，生成傳承快照 PDF（供內部討論用）")
@@ -295,31 +288,57 @@ with tab2:
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
-
-        w, h = A4  # 595x842 pt
+        w, h = A4
         x_pad, y_top, y_footer = 60, h - 60, 36
 
-        # ====== Logo：使用 Pillow 轉 RGB，保證能嵌入 ======
-        text_y = y_top
-        if LOGO.exists():
-            try:
-                pil_img = Image.open(str(LOGO)).convert("RGB")
-                pil_buf = BytesIO()
-                pil_img.save(pil_buf, format="PNG")
-                pil_buf.seek(0)
-                logo_img = ImageReader(pil_buf)
-                logo_h = 40
-                c.drawImage(logo_img, x_pad, y_top - logo_h,
-                            height=logo_h, preserveAspectRatio=True, mask="auto")
-                text_y = y_top - logo_h - 10
-            except Exception as e:
-                st.warning(f"⚠️ PDF 無法載入 logo.png：{e}")
-                text_y = y_top
-
-        # ====== 文字工具 ======
         TITLE_FONT = FONT_NAME if FONT.exists() else "Helvetica-Bold"
         BODY_FONT  = FONT_NAME if FONT.exists() else "Helvetica"
 
+        # ====== Logo：三層保險嵌入 ======
+        text_y = y_top
+        logo_drawn = False
+        if LOGO.exists():
+            try:
+                # A 層：Pillow 轉 RGB → inline
+                pil_img = Image.open(str(LOGO)).convert("RGB")
+                pil_buf = BytesIO(); pil_img.save(pil_buf, format="PNG"); pil_buf.seek(0)
+                logo_h = 40
+                c.drawInlineImage(pil_buf, x_pad, y_top - logo_h,
+                                  height=logo_h, preserveAspectRatio=True)
+                text_y = y_top - logo_h - 10
+                logo_drawn = True
+            except Exception:
+                try:
+                    # B 層：ImageReader + drawImage
+                    pil_img = Image.open(str(LOGO)).convert("RGB")
+                    logo_reader = ImageReader(pil_img)
+                    logo_h = 40
+                    c.drawImage(logo_reader, x_pad, y_top - logo_h,
+                                height=logo_h, preserveAspectRatio=True, mask="auto")
+                    text_y = y_top - logo_h - 10
+                    logo_drawn = True
+                except Exception:
+                    try:
+                        # C 層：base64 讀入
+                        b64 = get_base64_of_file(LOGO)
+                        if b64:
+                            raw = BytesIO(base64.b64decode(b64))
+                            logo_reader = ImageReader(raw)
+                            logo_h = 40
+                            c.drawImage(logo_reader, x_pad, y_top - logo_h,
+                                        height=logo_h, preserveAspectRatio=True, mask="auto")
+                            text_y = y_top - logo_h - 10
+                            logo_drawn = True
+                    except Exception:
+                        pass
+        if not logo_drawn:
+            # 若真的失敗，畫一個占位框避免版面跳動
+            c.setLineWidth(0.6); c.rect(x_pad, y_top-28, 80, 24)
+            c.setFont("Helvetica", 8); c.drawString(x_pad+6, y_top-20, "LOGO")
+            text_y = y_top - 40
+            st.warning("⚠️ PDF 無法嵌入 logo.png，已以占位符代替。請確認檔案為 RGB PNG。")
+
+        # ====== 行文字工具 ======
         def line(text, size=12, gap=18, bold=False):
             font = TITLE_FONT if bold else BODY_FONT
             c.setFont(font, size)
@@ -352,8 +371,12 @@ with tab2:
             if row:
                 line(f"• {row}", 11, 16)
 
-        # ====== 暖心收尾（緊接在內容最後）======
-        line.y -= 12
+        # ====== 區隔線 + 暖心收尾（緊接內容最後）======
+        line.y -= 8
+        c.setStrokeColorRGB(0.82, 0.84, 0.88)  # 淡灰
+        c.setLineWidth(0.6)
+        c.line(x_pad, line.y, w - x_pad, line.y)
+        line.y -= 14
         line("永傳家族傳承導師", 12, 18, bold=True)
         line("傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。", 11, 18)
 
@@ -361,12 +384,11 @@ with tab2:
         c.setFont(BODY_FONT, 10)
         c.drawRightString(w - x_pad, y_footer, "© 2025 《影響力》傳承策略平台｜永傳家族辦公室")
 
-        c.showPage()
-        c.save()
+        c.showPage(); c.save()
 
         st.download_button("下載 PDF", data=buf.getvalue(),
                            file_name="永傳_傳承快照.pdf", mime="application/pdf")
-        st.success("已生成 PDF（含 Logo 與暖心收尾文字）。")
+        st.success("已生成 PDF（含 Logo、分隔線與暖心收尾）。")
 
 # ============================================================
 # Tab3: 預約顧問（同風格快選）
