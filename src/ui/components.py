@@ -25,6 +25,18 @@ def topbar(name: str, end_date: str, logo_path: Optional[str] = None):
     with cols[2]:
         st.write("")
 
+
+def normalize_numbers_css():
+    # 縮小數字樣式（包含 st.metric 的值），並為自訂 KPI 設計一般文字大小
+    st.markdown("""
+    <style>
+    div[data-testid="stMetricValue"] { font-size: 1rem !important; }
+    div[data-testid="stMetricLabel"] { font-size: 0.9rem !important; }
+    .kpi { font-size: 1.15rem; font-weight: 600; line-height: 1.2; }
+    </style>
+    """, unsafe_allow_html=True)
+
 def page_footer():
+
     st.write("---")
     st.caption(BRAND["footer"])

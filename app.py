@@ -1,7 +1,7 @@
 
 import streamlit as st
 from src.config import APP_TITLE, APP_ICON, APP_LAYOUT, BRAND
-from src.ui.components import hide_streamlit_chrome, topbar, page_footer
+from src.ui.components import hide_streamlit_chrome, topbar, page_footer, normalize_numbers_css
 from src.ui.login import render_welcome_login
 from src.ui.typography import setup_cjk_font
 from src.utils.state import init_state
@@ -13,6 +13,7 @@ st.set_page_config(page_title=APP_TITLE, page_icon="assets/favicon.png", layout=
 
 hide_streamlit_chrome()
 setup_cjk_font("assets/NotoSansTC-Regular.ttf")
+normalize_numbers_css()
 init_state()
 
 user = get_user()
