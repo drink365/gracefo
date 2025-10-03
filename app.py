@@ -54,12 +54,12 @@ div.stButton > button:first-child, div.stDownloadButton > button{
 div.stButton > button:first-child:hover, div.stDownloadButton > button:hover{
   background:#1d4ed8; color:#fff;
 }
-div[data-baseweb="select"] > div{ border-radius:8px; }
-.tag{
-  display:inline-block; padding:4px 10px; border:1px solid #CBD5E1; border-radius:999px;
-  margin:4px 6px 0 0; font-size:12px; color:#334155;
-}
-.tag:hover{ background:#EEF2FF; border-color:#93C5FD; color:#1D4ED8; }
+/* ---- Tag chips (顯示用) ---- */
+.tags {display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px 0;}
+.tag {padding:6px 12px; border-radius:999px; border:1px solid #CBD5E1; color:#334155; font-size:12px;}
+.tag.selected {background:#2563eb; color:#fff; border-color:#1d4ed8;}
+/* 讓按鈕看起來像小型 chip */
+.chip-btn > button { border-radius:999px !important; padding:4px 12px !important; font-size:12px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,19 +171,15 @@ with tab1:
         heirs = ["配偶"] + heirs
 
     heirs_str = "、".join(heirs) if heirs else "（無繼承人 → 遺產歸國庫）"
-
     st.info(f"👉 法定繼承人（民法1138條示意）：{heirs_str}")
     st.success(f"👉 扣除額合計：約 NT$ {deductions:,.0f}")
 
     with st.expander("查看扣除額明細", expanded=False):
         st.write(f"- 基本免稅額：1,333 萬")
         st.write(f"- 喪葬費用：138 萬")
-        if has_spouse:
-            st.write(f"- 配偶扣除額：553 萬")
-        if children_count > 0:
-            st.write(f"- 子女扣除額：{children_count} × 56 萬 = {children_count * 56} 萬")
-        if parents_count > 0:
-            st.write(f"- 父母扣除額：{min(parents_count,2)} × 138 萬 = {min(parents_count,2) * 138} 萬")
+        if has_spouse: st.write(f"- 配偶扣除額：553 萬")
+        if children_count > 0: st.write(f"- 子女扣除額：{children_count} × 56 萬 = {children_count * 56} 萬")
+        if parents_count > 0: st.write(f"- 父母扣除額：{min(parents_count,2)} × 138 萬 = {min(parents_count,2) * 138} 萬")
 
     # 應繼分
     shares = {}
@@ -191,10 +187,8 @@ with tab1:
         if "子女" in heirs:
             total_persons = children_count + (1 if has_spouse else 0)
             if total_persons > 0:
-                if has_spouse:
-                    shares["配偶"] = 1 / total_persons
-                if children_count > 0:
-                    shares["子女（合計）"] = (total_persons - (1 if has_spouse else 0)) / total_persons
+                if has_spouse: shares["配偶"] = 1 / total_persons
+                if children_count > 0: shares["子女（合計）"] = (total_persons - (1 if has_spouse else 0)) / total_persons
         elif "父母" in heirs:
             shares["配偶"] = 0.5 if has_spouse else 0.0
             shares["父母（合計）"] = 0.5 if has_spouse else 1.0
@@ -208,8 +202,7 @@ with tab1:
     if shares:
         st.markdown("### 應繼分（比例示意）")
         for k, v in shares.items():
-            if v > 0:
-                st.write(f"- {k}：{v:.2%}")
+            if v > 0: st.write(f"- {k}：{v:.2%}")
 
     # 稅額（新級距 5,621／11,242 萬）
     BRACKET1 = 56_210_000
@@ -228,9 +221,7 @@ with tab1:
         part3 = None
         bracket_used = "10% / 15%"
     else:
-        tax = (RATE1 * BRACKET1
-               + RATE2 * (BRACKET2 - BRACKET1)
-               + RATE3 * (taxable - BRACKET2))
+        tax = (RATE1 * BRACKET1 + RATE2 * (BRACKET2 - BRACKET1) + RATE3 * (taxable - BRACKET2))
         part1 = f"10% × {BRACKET1:,.0f} = {RATE1*BRACKET1:,.0f}"
         part2 = f"15% × ({BRACKET2:,.0f} − {BRACKET1:,.0f}) = {RATE2*(BRACKET2-BRACKET1):,.0f}"
         part3 = f"20% × ({taxable:,.0f} − {BRACKET2:,.0f}) = {RATE3*(taxable-BRACKET2):,.0f}"
@@ -251,35 +242,54 @@ with tab1:
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
-# Tab2: 傳承快照 PDF（勾選框在輸入框正上方 + 左上 Logo + 分隔線 + 暖心收尾）
+# Tab2: 傳承快照 PDF（標題 → 標籤 chips → 輸入框；Logo 保險嵌入；分隔線＋暖心收尾）
 # ============================================================
 with tab2:
-    st.caption("快速勾選＋輸入，生成傳承快照 PDF（供內部討論用）")
+    st.caption("快速點選標籤＋補充文字，生成傳承快照 PDF（供內部討論用）")
 
-    # ---- 勾選項目（在輸入框上方）----
+    # ---- 標籤選擇器：用按鈕模擬 chips，可切換選中/取消 ----
+    def tag_selector(title: str, options: list[str], state_key: str):
+        st.markdown(f"### {title}")
+        if state_key not in st.session_state:
+            st.session_state[state_key] = []
+        selected = set(st.session_state[state_key])
+
+        # 以多欄位排版，按鈕做成小型圓角（.chip-btn）
+        cols = st.columns(6 if len(options) >= 6 else len(options))
+        for i, opt in enumerate(options):
+            label = f"✓ {opt}" if opt in selected else opt
+            kw = {"key": f"{state_key}_btn_{i}"}
+            with cols[i % len(cols)]:
+                with st.container():
+                    st.markdown('<div class="chip-btn">', unsafe_allow_html=True)
+                    pressed = st.button(label, use_container_width=False, **kw)
+                    st.markdown('</div>', unsafe_allow_html=True)
+            if pressed:
+                if opt in selected:
+                    selected.remove(opt)
+                else:
+                    selected.add(opt)
+                st.session_state[state_key] = list(selected)
+                st.rerun()
+
+        # 顯示目前已選（純展示）
+        chips_html = '<div class="tags">' + "".join(
+            [f'<span class="tag selected">{opt}</span>' for opt in selected]
+        ) + "</div>"
+        st.markdown(chips_html, unsafe_allow_html=True)
+
+        return list(selected)
+
     assets_options = ["公司股權", "不動產", "金融資產", "保單", "海外資產", "其他"]
     concerns_options = ["稅負過高", "婚前財產隔離", "企業接班", "現金流不足", "遺囑設計", "信託安排"]
 
-    def render_checkboxes(title, options, key_prefix):
-        st.markdown(f"**{title}（可點選快速加入）**")
-        cols = st.columns(6 if len(options)>=6 else len(options))
-        selected = []
-        for i, opt in enumerate(options):
-            with cols[i % len(cols)]:
-                if st.checkbox(opt, value=False, key=f"{key_prefix}_{i}"):
-                    selected.append(opt)
-        return selected
+    assets_selected = tag_selector("主要資產（可點選）", assets_options, "assets_sel")
+    concerns_selected = tag_selector("傳承顧慮（可點選）", concerns_options, "concerns_sel")
 
-    assets_selected = render_checkboxes("主要資產", assets_options, "asset")
-    concerns_selected = render_checkboxes("傳承顧慮", concerns_options, "concern")
-
-    # ---- 文字框（自動同步勾選結果，仍可手動補充）----
-    assets_text = "\n".join(assets_selected)
-    concerns_text = "\n".join(concerns_selected)
-
+    # ---- 輸入框（在標籤下方；預填選項，仍可手動增刪）----
     who = st.text_input("想優先照顧的人（例如：太太／兒女／長輩）")
-    assets = st.text_area("主要資產（可自行補充）", value=assets_text, height=120)
-    concerns = st.text_area("傳承顧慮（可自行補充）", value=concerns_text, height=120)
+    assets = st.text_area("主要資產（可自行補充）", value="\n".join(assets_selected), height=120)
+    concerns = st.text_area("傳承顧慮（可自行補充）", value="\n".join(concerns_selected), height=120)
 
     if st.button("生成傳承快照 PDF"):
         buf = BytesIO()
@@ -298,14 +308,12 @@ with tab2:
                 pil_img = Image.open(str(LOGO)).convert("RGB")
                 pil_buf = BytesIO(); pil_img.save(pil_buf, format="PNG"); pil_buf.seek(0)
                 c.drawInlineImage(pil_buf, x_pad, y_top - 40, height=40, preserveAspectRatio=True)
-                text_y = y_top - 50
-                logo_drawn = True
+                text_y = y_top - 50; logo_drawn = True
             except Exception:
                 try:
                     logo_reader = ImageReader(Image.open(str(LOGO)).convert("RGB"))
                     c.drawImage(logo_reader, x_pad, y_top - 40, height=40, preserveAspectRatio=True, mask="auto")
-                    text_y = y_top - 50
-                    logo_drawn = True
+                    text_y = y_top - 50; logo_drawn = True
                 except Exception:
                     try:
                         b64 = get_base64_of_file(LOGO)
@@ -313,8 +321,7 @@ with tab2:
                             raw = BytesIO(base64.b64decode(b64))
                             logo_reader = ImageReader(raw)
                             c.drawImage(logo_reader, x_pad, y_top - 40, height=40, preserveAspectRatio=True, mask="auto")
-                            text_y = y_top - 50
-                            logo_drawn = True
+                            text_y = y_top - 50; logo_drawn = True
                     except Exception:
                         pass
         if not logo_drawn:
@@ -346,15 +353,13 @@ with tab2:
         line("主要資產：", 12, 18, bold=True)
         for row in (assets or "（尚未填寫）").split("\n"):
             row = row.strip()
-            if row:
-                line(f"• {row}", 11, 16)
+            if row: line(f"• {row}", 11, 16)
         line.y -= 6
 
         line("傳承顧慮：", 12, 18, bold=True)
         for row in (concerns or "（尚未填寫）").split("\n"):
             row = row.strip()
-            if row:
-                line(f"• {row}", 11, 16)
+            if row: line(f"• {row}", 11, 16)
 
         # 區隔線 + 暖心收尾（緊接內容最後）
         line.y -= 8
@@ -375,25 +380,33 @@ with tab2:
         st.success("已生成 PDF（含 Logo、分隔線與暖心收尾）。")
 
 # ============================================================
-# Tab3: 預約顧問（同風格勾選）
+# Tab3: 預約顧問（同風格）
 # ============================================================
 with tab3:
     st.caption("7 分鐘工具體驗後，預約深入討論更有感")
 
     needs_options = ["稅負規劃", "現金流安排", "保單傳承", "跨境資產", "企業接班"]
-    st.markdown("**常見需求（可點選快速加入）**")
+    st.markdown("### 常見需求（可點選）")
+    if "needs_sel" not in st.session_state: st.session_state["needs_sel"] = []
+    sel = set(st.session_state["needs_sel"])
     cols = st.columns(5)
-    selected = []
     for i, opt in enumerate(needs_options):
+        label = f"✓ {opt}" if opt in sel else opt
         with cols[i % 5]:
-            if st.checkbox(opt, key=f"need_{i}"):
-                selected.append(opt)
+            st.markdown('<div class="chip-btn">', unsafe_allow_html=True)
+            pressed = st.button(label, key=f"need_{i}")
+            st.markdown('</div>', unsafe_allow_html=True)
+        if pressed:
+            if opt in sel: sel.remove(opt)
+            else: sel.add(opt)
+            st.session_state["needs_sel"] = list(sel)
+            st.rerun()
 
     with st.form("booking_form"):
         name = st.text_input("您的稱呼")
         email = st.text_input("Email")
         phone = st.text_input("聯絡電話")
-        note = st.text_area("想優先解決的問題（可自行補充）", value="\n".join(selected), height=120)
+        note = st.text_area("想優先解決的問題（可自行補充）", value="\n".join(sel), height=120)
         ok = st.form_submit_button("送出預約需求")
     if ok:
         st.success("我們已收到您的預約需求。工作日內會與您聯繫，安排 20–30 分鐘初談。")
