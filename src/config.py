@@ -6,8 +6,10 @@ from pathlib import Path
 APP_TITLE = "《影響力》傳承策略平台"
 APP_ICON = "📦"
 APP_LAYOUT = "wide"
+APP_SUBTITLE = "專業 × 智能 × 永續｜AI 驅動的家族傳承與財務規劃平台"
 
 AUTHORIZED_USERS = {
+    "demo": {"name": "示範帳號", "password": "demo123", "role": "member", "start_date": "2025-01-01", "end_date": "2026-12-31"},
     "admin": {"name": "管理者", "password": "xxx", "role": "admin", "start_date": "2025-01-01", "end_date": "2026-12-31"},
     "grace": {"name": "Grace", "password": "xxx", "role": "vip", "start_date": "2025-01-01", "end_date": "2026-12-31"},
     "user1": {"name": "使用者一", "password": "xxx", "role": "member", "start_date": "2025-05-01", "end_date": "2025-10-31"},

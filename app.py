@@ -2,6 +2,7 @@
 import streamlit as st
 from src.config import APP_TITLE, APP_ICON, APP_LAYOUT, BRAND
 from src.ui.components import hide_streamlit_chrome, topbar, page_footer
+from src.ui.login import render_welcome_login
 from src.ui.typography import setup_cjk_font
 from src.utils.state import init_state
 from src.utils.auth import login_block, get_user
@@ -16,7 +17,7 @@ init_state()
 
 user = get_user()
 if not user:
-    ses = login_block()
+    render_welcome_login()
     st.stop()
 
 topbar(user.display_name, user.end_date, BRAND["logo_path"])
