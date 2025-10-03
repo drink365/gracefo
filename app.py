@@ -9,7 +9,7 @@ from pathlib import Path
 import base64
 
 # ----------------------------
-# 檔案路徑
+# 檔案與字型
 # ----------------------------
 LOGO = Path("logo.png")
 FAVICON = Path("logo2.png")
@@ -32,7 +32,9 @@ st.set_page_config(
     layout="wide",
 )
 
-# CSS 樣式
+# ----------------------------
+# 全域樣式
+# ----------------------------
 st.markdown("""
 <style>
 /* Tabs：未選／已選 */
@@ -44,41 +46,35 @@ button[role="tab"]{
 button[role="tab"][aria-selected="true"]{
     background:#2563eb !important; color:#fff !important;
 }
-/* 亮點數字與標籤 */
-div[data-testid="stMetricValue"]{
-    font-size:20px !important; font-weight:700 !important; color:#1e40af !important;
-}
-div[data-testid="stMetricLabel"]{
-    font-size:18px !important; font-weight:700 !important; color:#1e293b !important;
-}
-/* 主要按鈕底色 */
-div.stButton > button:first-child,
-div.stDownloadButton > button{
+/* Metrics */
+div[data-testid="stMetricValue"]{font-size:20px !important; font-weight:700 !important; color:#1e40af !important;}
+div[data-testid="stMetricLabel"]{font-size:18px !important; font-weight:700 !important; color:#1e293b !important;}
+/* Buttons */
+div.stButton > button:first-child, div.stDownloadButton > button{
     background:#2563eb; color:#fff; border-radius:8px; padding:.5em 1em; font-weight:600;
 }
-div.stButton > button:first-child:hover,
-div.stDownloadButton > button:hover{
+div.stButton > button:first-child:hover, div.stDownloadButton > button:hover{
     background:#1d4ed8; color:#fff;
 }
-/* multiselect：圓角、低調邊框 */
+/* Select */
 div[data-baseweb="select"] > div{ border-radius:8px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# PDF 字型（可選）
+# PDF 繁中字型（可選）
 # ----------------------------
 FONT_NAME = "NotoSansTC"
 if FONT.exists():
     try:
         pdfmetrics.registerFont(TTFont(FONT_NAME, str(FONT)))
     except Exception:
-        st.sidebar.warning("⚠️ 無法載入字型")
+        st.sidebar.warning("⚠️ 無法載入字型（PDF 仍可生成，但可能無法顯示繁體中文）")
 else:
     st.sidebar.info("提示：放入 NotoSansTC-Regular.ttf 以支援 PDF 繁中")
 
 # ----------------------------
-# 頂部框（Base64 logo；標題同一行）
+# 頂部區塊（Base64 logo；標題同一行）
 # ----------------------------
 logo_b64 = get_base64_of_file(LOGO)
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
@@ -95,20 +91,17 @@ st.markdown(
             永傳家族傳承導師
         </span>
       </div>
-      <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;
-                 color:#1e3a8a;font-weight:700">
+      <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;color:#1e3a8a;font-weight:700">
         AI × 財稅 × 傳承：您的「數位家族辦公室」入口
       </h2>
-      <p style="color:#475569;margin:0;font-size:14px">
-        以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。
-      </p>
+      <p style="color:#475569;margin:0;font-size:14px">以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。</p>
     </div>
     <br/>
     """,
     unsafe_allow_html=True
 )
 
-# 亮點區
+# 亮點
 c1, c2, c3 = st.columns(3)
 c1.metric("快速掌握傳承全貌", "約 7 分鐘")
 c2.metric("顧問端效率", "提升 3×")
@@ -123,19 +116,19 @@ st.subheader("用 AI 先看見，再決定")
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
 # ============================================================
-# Tab1: 遺產稅快速估算（含基本免稅 1333 萬、喪葬費 138 萬）
+# Tab1: 遺產稅快速估算（萬位輸入 + 扣除額明細 + 應繼分）
 # ============================================================
 with tab1:
     st.caption("輸入資產（萬）與家庭狀況，依民法第1138條推算法定繼承人，並計算扣除額與遺產稅（示意用途）。")
 
-    # 1) 資產以「萬」為單位
+    # 1) 資產（萬位）
     total_wan = st.number_input("總資產（萬）", min_value=0, step=100, value=30000)
     estate = total_wan * 10_000  # 轉為 TWD
 
     st.divider()
     st.markdown("### 請輸入家庭成員")
 
-    # 2) 家庭狀況（扣除額需要的欄位）
+    # 2) 家庭狀況（扣除用）
     col1, col2, col3 = st.columns([1,1,1])
     with col1:
         has_spouse = st.checkbox("是否有配偶（扣除額 553 萬）", value=False)
@@ -147,11 +140,11 @@ with tab1:
     # 3) 只為順位判斷（無扣除額）
     col4, col5 = st.columns([1,1])
     with col4:
-        has_siblings = st.checkbox("是否有兄弟姊姊（無扣除額）", value=False)
+        has_siblings = st.checkbox("是否有兄弟姊妹（無扣除額）", value=False)
     with col5:
         has_grandparents = st.checkbox("祖父母是否健在（無扣除額）", value=False)
 
-    # 4) 扣除額（含基本免稅 1333 萬 + 喪葬費 138 萬；單位萬 → 轉 TWD）
+    # 4) 扣除額（含 基本免稅 1,333 萬 + 喪葬費 138 萬）
     BASE_EXEMPTION_WAN = 1333
     FUNERAL_EXPENSE_WAN = 138
     deduction_wan = BASE_EXEMPTION_WAN + FUNERAL_EXPENSE_WAN
@@ -192,9 +185,9 @@ with tab1:
         if children_count > 0:
             st.write(f"- 子女扣除額：{children_count} × 56 萬 = {children_count * 56} 萬")
         if parents_count > 0:
-            st.write(f"- 父母扣除額：{parents_count} × 138 萬 = {min(parents_count,2) * 138} 萬")
+            st.write(f"- 父母扣除額：{min(parents_count,2)} × 138 萬 = {min(parents_count,2) * 138} 萬")
 
-    # 6) 應繼分（按你指定規則）
+    # 6) 應繼分（你指定的規則）
     shares = {}
     if heirs:
         if "子女" in heirs:
@@ -229,17 +222,21 @@ with tab1:
         for k, v in shares.items():
             st.write(f"- {k}：{v:.2%}")
 
-    # 7) 稅額試算（保留原級距）
+    # 7) 稅額試算（✅ 使用新級距 5,621 萬／11,242 萬）
+    BRACKET1 = 56_210_000
+    BRACKET2 = 112_420_000
+    RATE1, RATE2, RATE3 = 0.10, 0.15, 0.20
+
     taxable = max(estate - deductions, 0)
-    if taxable <= 50_000_000:
-        tax = taxable * 0.10
-    elif taxable <= 100_000_000:
-        tax = 5_000_000 + (taxable - 50_000_000) * 0.15
+
+    if taxable <= BRACKET1:
+        tax = RATE1 * taxable
+    elif taxable <= BRACKET2:
+        tax = RATE1 * BRACKET1 + RATE2 * (taxable - BRACKET1)
     else:
-        tax = 12,500,000 + (taxable - 100_000_000) * 0.20  # 注意逗號寫法
-    # 修正上行：Python 不能用千分位逗號在數字字面量
-    if taxable > 100_000_000:
-        tax = 12_500_000 + (taxable - 100_000_000) * 0.20
+        tax = (RATE1 * BRACKET1
+               + RATE2 * (BRACKET2 - BRACKET1)
+               + RATE3 * (taxable - BRACKET2))
 
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
     st.caption("＊示意計算，請依最新法規與個案確認。")
@@ -265,6 +262,7 @@ with tab2:
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
+        w, h = A4
 
         def line(text, size=12, gap=18, bold=False):
             font = FONT_NAME if FONT.exists() else ("Helvetica-Bold" if bold else "Helvetica")
@@ -274,7 +272,6 @@ with tab2:
                 c.drawString(60, y, seg)
                 y -= gap
             line.y = y
-        w, h = A4
         line.y = h - 72
 
         c.setTitle("永傳｜傳承快照")
