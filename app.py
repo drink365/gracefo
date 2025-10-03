@@ -10,17 +10,18 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-# 影像容錯（即使 Pillow 不可用也不會當）
+# 圖片處理（避免壞檔造成程式中斷）
 try:
     from PIL import Image, UnidentifiedImageError
-except Exception:  # Pillow 沒裝或版本不符時的退路
+except Exception:
     Image = None
     class UnidentifiedImageError(Exception): ...
-# ------------------ 品牌素材路徑 ------------------
-LOGO = Path("logo.png")                   # 側邊欄 Logo
-FAVICON = Path("logo2.png")               # 瀏覽器小圖示
-FONT = Path("NotoSansTC-Regular.ttf")     # 繁中 TrueType 字型
-FONT_NAME = "NotoSansTC"                  # PDF 用字型名
+
+# ------------------ 資源與常數 ------------------
+LOGO = Path("logo.png")                    # 置頂 Logo
+FAVICON = Path("logo2.png")                # 分頁小圖示
+FONT = Path("NotoSansTC-Regular.ttf")      # 繁中 TrueType 字型
+FONT_NAME = "NotoSansTC"                   # PDF 用字型名稱
 
 st.set_page_config(
     page_title="永傳影響力傳承平台｜客戶入口",
@@ -28,35 +29,48 @@ st.set_page_config(
     layout="wide",
 )
 
-# ------------------ 側邊欄 Logo（安全顯示） ------------------
-def show_sidebar_logo():
-    if not LOGO.exists():
-        st.sidebar.info("提示：找不到 logo.png（請放在專案根目錄）。")
-        return
-    try:
-        if Image is not None:
-            img = Image.open(LOGO)  # 先驗證檔案是否為有效圖片
-            st.sidebar.image(img, width=200)
-        else:
-            # 沒有 Pillow 也照樣嘗試載入（Streamlit 會自行處理）；若壞檔，except 捕捉不到，但常見平台皆預裝 Pillow
-            st.sidebar.image(str(LOGO), width=200)
-    except UnidentifiedImageError:
-        st.sidebar.warning("⚠️ logo.png 檔案無法辨識，請確認為有效 PNG/JPG。")
-    except Exception as e:
-        st.sidebar.warning(f"⚠️ 顯示 logo 時發生錯誤：{e}")
+# ------------------ 置頂 Logo（避免模糊） ------------------
+def show_top_logo(path: Path, max_width_px: int = 320):
+    """
+    置頂置中顯示 Logo：
+    - 先讀取原始像素寬度，絕不「放大」超過原尺寸，避免模糊
+    - 只做等比縮小
+    """
+    col_left, col_center, col_right = st.columns([1, 1, 1])
+    with col_center:
+        if not path.exists():
+            st.info("⚠️ 找不到 logo.png（請放在專案根目錄）。")
+            return
+        try:
+            if Image is None:
+                # 沒有 Pillow 也嘗試顯示；但無法做原始尺寸判斷
+                st.image(str(path), width=max_width_px, use_container_width=False)
+                return
+            # 驗證檔案、取得原始尺寸
+            img = Image.open(path)
+            img.verify()  # 驗證檔頭
+            img = Image.open(path)  # verify 後需重新開啟
+            native_w, _ = img.size
+            # 不放大：顯示寬度 = min(上限, 原始寬度)
+            display_w = min(max_width_px, native_w)
+            st.image(img, width=display_w, use_container_width=False)
+        except UnidentifiedImageError:
+            st.warning("⚠️ logo.png 不是有效的 PNG/JPG，請重新另存為 PNG 後再上傳。")
+        except Exception as e:
+            st.warning(f"⚠️ 顯示 logo 發生錯誤：{e}")
 
-show_sidebar_logo()
+show_top_logo(LOGO, max_width_px=320)
 
 # ------------------ PDF 繁中字型（安全註冊） ------------------
 def register_pdf_font():
     if not FONT.exists():
-        st.sidebar.info("提示：未找到 NotoSansTC-Regular.ttf；PDF 可能出現中文亂碼。")
-        return "Helvetica"  # 回退
+        st.info("提示：未找到 NotoSansTC-Regular.ttf；PDF 可能出現中文亂碼。")
+        return "Helvetica"
     try:
         pdfmetrics.registerFont(TTFont(FONT_NAME, str(FONT)))
         return FONT_NAME
     except Exception as e:
-        st.sidebar.warning(f"⚠️ 無法載入字型：{e}；PDF 改用 Helvetica（可能有中文亂碼）。")
+        st.warning(f"⚠️ 無法載入字型：{e}；PDF 改用 Helvetica（可能有中文亂碼）。")
         return "Helvetica"
 
 PDF_FONT = register_pdf_font()
@@ -68,7 +82,8 @@ INTEGRATIONS = {
     "sheet_id": None,
     "notify_email": None,
 }
-# Google Sheets（若未設定 secrets 也不會報錯）
+
+# Google Sheets（未設定 secrets 也能正常運作）
 try:
     if "gcp_service_account" in st.secrets and "SHEET_ID" in st.secrets:
         import gspread
@@ -84,9 +99,9 @@ try:
         INTEGRATIONS["has_gsheet"] = True
         INTEGRATIONS["sheet_id"] = st.secrets["SHEET_ID"]
 except Exception as e:
-    st.sidebar.warning("⚠️ Google Sheets 尚未設定或金鑰有誤（先以離線模式運作）。")
+    st.caption("⚠️ Google Sheets 尚未設定或金鑰有誤（目前以離線模式運作）。")
 
-# SendGrid（若未設定 secrets 也不會報錯）
+# SendGrid（未設定 secrets 也能正常運作）
 try:
     if "SENDGRID_API_KEY" in st.secrets and st.secrets["SENDGRID_API_KEY"]:
         from sendgrid import SendGridAPIClient
@@ -95,10 +110,10 @@ try:
     if "NOTIFY_EMAIL" in st.secrets and st.secrets["NOTIFY_EMAIL"]:
         INTEGRATIONS["notify_email"] = st.secrets["NOTIFY_EMAIL"]
 except Exception as e:
-    st.sidebar.warning("⚠️ Email 通知尚未設定（會提供 mailto 傳送）。")
+    st.caption("⚠️ Email 通知尚未設定（會提供 mailto 後備連結）。")
 
 def append_row(sheet_title: str, row: list):
-    """寫入 Google Sheet；未啟用時回 False, 'GSHEET_DISABLED'"""
+    """寫入 Google Sheet；未啟用時回 False, 'GSHEET_DISABLED'。"""
     if not INTEGRATIONS["has_gsheet"]:
         return False, "GSHEET_DISABLED"
     try:
@@ -107,17 +122,14 @@ def append_row(sheet_title: str, row: list):
             ws = sh.worksheet(sheet_title)
         except Exception:
             ws = sh.add_worksheet(title=sheet_title, rows=1000, cols=20)
-            ws.append_row(
-                ["timestamp", "name", "email", "phone", "note", "source"],
-                value_input_option="USER_ENTERED",
-            )
+            ws.append_row(["timestamp","name","email","phone","note","source"], value_input_option="USER_ENTERED")
         ws.append_row(row, value_input_option="USER_ENTERED")
         return True, "OK"
     except Exception as e:
         return False, str(e)
 
 def send_email(subject: str, html: str):
-    """寄出通知 Email；未啟用時回 False, 'EMAIL_DISABLED'"""
+    """寄送通知 Email；未啟用時回 False, 'EMAIL_DISABLED'。"""
     if not INTEGRATIONS["has_sendgrid"] or not INTEGRATIONS["notify_email"]:
         return False, "EMAIL_DISABLED"
     try:
@@ -133,25 +145,22 @@ def send_email(subject: str, html: str):
     except Exception as e:
         return False, str(e)
 
-# ------------------ 頁首 Hero ------------------
+# ------------------ Hero 段落（不再內嵌 Logo） ------------------
 st.markdown(
-    f"""
-    <div style="padding:24px;border-radius:24px;background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);border:1px solid rgba(15,23,42,0.12)">
-      <div style="display:flex;align-items:center;gap:12px;">
-        {f'<img src="{LOGO.as_posix()}" alt="logo" style="height:36px;border-radius:8px"/>' if LOGO.exists() else ''}
-        <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#4f46e5;color:#fff;font-size:12px">永傳家族傳承導師</span>
-      </div>
-      <h1 style="margin:12px 0 8px 0;font-size:28px;line-height:1.2">AI × 財稅 × 傳承：<br/>您的「數位家族辦公室」入口</h1>
+    """
+    <div style="padding:20px;border-radius:20px;background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);border:1px solid rgba(15,23,42,0.12)">
+      <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#4f46e5;color:#fff;font-size:12px">永傳家族傳承導師</span>
+      <h1 style="margin:12px 0 8px 0;font-size:28px;line-height:1.2">AI × 財稅 × 傳承：您的「數位家族辦公室」入口</h1>
       <p style="color:#475569;margin:0">以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。<br/>我們不推商品，只推動「讓重要的人真的被照顧到」。</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-c1, c2, c3 = st.columns(3)
-c1.metric("快速掌握傳承全貌", "約 7 分鐘")
-c2.metric("顧問端效率", "提升 3×")
-c3.metric("隱私保護", "本地試算")
+m1, m2, m3 = st.columns(3)
+m1.metric("快速掌握傳承全貌", "約 7 分鐘")
+m2.metric("顧問端效率", "提升 3×")
+m3.metric("隱私保護", "本地試算")
 
 st.write("---")
 st.subheader("用 AI 先看見，再決定")
@@ -163,10 +172,10 @@ tab1, tab2, tab3 = st.tabs(
 # ------------------ 工具 1：遺產稅試算（示意） ------------------
 with tab1:
     st.caption("輸入大致資產與扣除額，立即看見稅額區間（示意用途，實務請由顧問確認）")
-    col1, col2 = st.columns(2)
-    with col1:
+    c1, c2 = st.columns(2)
+    with c1:
         estate = st.number_input("估算總資產（TWD）", min_value=0, step=1_000_000, value=120_000_000)
-    with col2:
+    with c2:
         deduct = st.number_input("可扣除額（TWD）", min_value=0, step=500_000, value=0)
 
     FREE_AMOUNT = 12_000_000  # 示意免稅額
@@ -240,7 +249,7 @@ with tab2:
         )
         st.success("已生成 PDF。可做為與導師討論的起點。")
 
-        # 可選：紀錄到 Google Sheets
+        # 選配：紀錄到 Google Sheets
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if INTEGRATIONS["has_gsheet"]:
             ok, msg = append_row(
@@ -252,7 +261,7 @@ with tab2:
             else:
                 st.warning(f"⚠️ Google Sheet 寫入失敗：{msg}")
 
-# ------------------ 工具 3：預約表單（可寫入 Sheets / 可寄信） ------------------
+# ------------------ 工具 3：預約表單 ------------------
 with tab3:
     st.caption("7 分鐘工具體驗後，預約深入討論更有感")
     with st.form("booking_form"):
@@ -283,7 +292,6 @@ with tab3:
             else:
                 st.warning(f"⚠️ Email 發送失敗：{msg2}")
 
-        # 前端成功訊息 + mailto 後備連結
         st.success("我們已收到您的預約需求。工作日內會與您聯繫，安排 20–30 分鐘初談。")
         if not INTEGRATIONS["has_sendgrid"]:
             mailto = (
