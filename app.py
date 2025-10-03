@@ -1,4 +1,3 @@
-
 import streamlit as st
 from datetime import datetime
 from io import BytesIO
@@ -7,24 +6,36 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pathlib import Path
+import base64
 
-LOGO = Path("logo.png")
-FAVICON = Path("logo2.png")
-FONT = Path("NotoSansTC-Regular.ttf")
+# === 檔案路徑 ===
+LOGO = Path("logo.png")                # 中央顯示的品牌 logo（改為 base64 內嵌）
+FAVICON = Path("logo2.png")            # 瀏覽器分頁小圖示
+FONT = Path("NotoSansTC-Regular.ttf")  # PDF 繁中 TrueType 字型
 
+# === 工具：把檔案轉為 base64 內嵌 ===
+def get_base64_of_file(path: Path) -> str | None:
+    try:
+        if path.exists() and path.stat().st_size > 0:
+            return base64.b64encode(path.read_bytes()).decode()
+    except Exception:
+        pass
+    return None
+
+# === 頁面設定（favicon 若不存在就用 emoji） ===
 st.set_page_config(
     page_title="永傳影響力傳承平台｜客戶入口",
     page_icon=str(FAVICON) if FAVICON.exists() else "✨",
     layout="wide",
 )
 
-# CSS override for st.metric
+# === CSS：調整 st.metric 的字級與顏色（縮小 2 號並加粗） ===
 st.markdown("""
 <style>
 div[data-testid="stMetricValue"] {
-    font-size: 20px !important;
-    font-weight: 700 !important;
-    color: #1e40af !important;
+    font-size: 20px !important;    /* 原本很大，這裡縮小 */
+    font-weight: 700 !important;   /* 加粗 */
+    color: #1e40af !important;     /* 可改成你的品牌色 */
 }
 div[data-testid="stMetricLabel"] {
     font-size: 14px !important;
@@ -33,11 +44,7 @@ div[data-testid="stMetricLabel"] {
 </style>
 """, unsafe_allow_html=True)
 
-if LOGO.exists():
-    st.sidebar.image(str(LOGO), width=200)
-else:
-    st.sidebar.info("找不到 logo.png（請放在專案根目錄）。")
-
+# === PDF 繁中（ReportLab 字型註冊） ===
 FONT_NAME = "NotoSansTC"
 if FONT.exists():
     try:
@@ -45,10 +52,12 @@ if FONT.exists():
     except Exception as e:
         st.sidebar.warning(f"無法載入字型：{e}")
 else:
-    st.sidebar.info("提示：放入 NotoSansTC-Regular.ttf 以在 PDF 正確顯示繁體中文。")
+    st.sidebar.info("提示：把 NotoSansTC-Regular.ttf 放在根目錄，PDF 才能正確顯示繁體中文。")
 
+# === 可選整合（Secrets 啟用）：Google Sheets + SendGrid ===
 INTEGRATIONS = {"has_gsheet": False, "has_sendgrid": False, "sheet_id": None, "notify_email": None}
 
+# Google Sheets
 try:
     if "gcp_service_account" in st.secrets and "SHEET_ID" in st.secrets:
         import gspread
@@ -61,6 +70,7 @@ try:
 except Exception:
     st.sidebar.warning("⚠️ Google Sheets 尚未設定或金鑰有誤（目前以離線模式運作）。")
 
+# SendGrid
 try:
     if "SENDGRID_API_KEY" in st.secrets and st.secrets["SENDGRID_API_KEY"]:
         from sendgrid import SendGridAPIClient
@@ -98,21 +108,30 @@ def send_email(subject: str, html: str):
     except Exception as e:
         return False, str(e)
 
+# === 頁面頂區（含 base64 內嵌 logo） ===
+logo_b64 = get_base64_of_file(LOGO)
+logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
+
 st.markdown(
     f"""
     <div style="padding:24px;border-radius:24px;background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);border:1px solid rgba(15,23,42,0.12)">
       <div style="display:flex;align-items:center;gap:12px;">
-        {f'<img src="{LOGO.as_posix()}" alt="logo" style="height:36px;border-radius:8px"/>' if LOGO.exists() else ''}
+        {logo_html}
         <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#4f46e5;color:#fff;font-size:12px">永傳家族傳承導師</span>
       </div>
       <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;color:#1e3a8a;font-weight:700">
         AI × 財稅 × 傳承：<br/>您的「數位家族辦公室」入口
       </h2>
-      <p style="color:#475569;margin:0;font-size:14px">以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。<br/>我們不推商品，只推動「讓重要的人真的被照顧到」。</p>
+      <p style="color:#475569;margin:0;font-size:14px">
+        以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。<br/>
+        我們不推商品，只推動「讓重要的人真的被照顧到」。
+      </p>
     </div>
-    """, unsafe_allow_html=True
+    """,
+    unsafe_allow_html=True
 )
 
+# === 亮點（字級由上方 CSS 控制） ===
 c1, c2, c3 = st.columns(3)
 c1.metric("快速掌握傳承全貌", "約 7 分鐘")
 c2.metric("顧問端效率", "提升 3×")
@@ -121,8 +140,10 @@ c3.metric("隱私保護", "本地試算")
 st.write("---")
 st.subheader("用 AI 先看見，再決定")
 
+# === Tabs ===
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
+# Tab1：遺產稅試算（示意）
 with tab1:
     st.caption("輸入大致資產與扣除額，立即看見稅額區間（示意用途，實務請由顧問確認）")
     col1, col2 = st.columns(2)
@@ -132,7 +153,6 @@ with tab1:
         deduct = st.number_input("可扣除額（TWD）", min_value=0, step=500_000, value=0)
     free_amount = 12_000_000
     taxable = max(estate - deduct - free_amount, 0)
-    tax = 0
     if taxable <= 50_000_000:
         tax = taxable * 0.10
     elif taxable <= 100_000_000:
@@ -142,6 +162,7 @@ with tab1:
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
     st.caption("💡 以壽險承接＋指定受益搭配信託，可望進一步優化稅務與風險（需個案評估）。")
 
+# Tab2：傳承快照 PDF
 with tab2:
     st.caption("先把最重要的人放進地圖，再談工具（PDF 供內部討論用）")
     with st.form("legacy_form"):
@@ -195,6 +216,7 @@ with tab2:
             else:
                 st.warning(f"⚠️ Google Sheet 寫入失敗：{msg}")
 
+# Tab3：預約表單
 with tab3:
     st.caption("7 分鐘工具體驗後，預約深入討論更有感")
     with st.form("booking_form"):
@@ -225,13 +247,13 @@ with tab3:
             st.markdown(f"[或直接寄信通知我們]({mailto})")
 
 st.write("---")
-lcol, rcol = st.columns([2,1])
-with lcol:
+left, right = st.columns([2,1])
+with left:
     st.markdown("""
 **永傳家族傳承導師**  
 傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。
 """)
-with rcol:
+with right:
     st.markdown("""
 **聯絡**
 - 官網：gracefo.com  
