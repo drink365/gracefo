@@ -9,11 +9,11 @@ from pathlib import Path
 import base64
 
 # === 檔案路徑 ===
-LOGO = Path("logo.png")                # 中央顯示的品牌 logo（以 base64 內嵌）
-FAVICON = Path("logo2.png")            # 瀏覽器分頁小圖示
-FONT = Path("NotoSansTC-Regular.ttf")  # PDF 繁中 TrueType 字型
+LOGO = Path("logo.png")
+FAVICON = Path("logo2.png")
+FONT = Path("NotoSansTC-Regular.ttf")
 
-# === 工具：把檔案轉為 base64 內嵌 ===
+# === 工具：base64 讀檔 ===
 def get_base64_of_file(path: Path) -> str | None:
     try:
         if path.exists() and path.stat().st_size > 0:
@@ -22,96 +22,54 @@ def get_base64_of_file(path: Path) -> str | None:
         pass
     return None
 
-# === 頁面設定（favicon 若不存在就用 emoji） ===
+# === 頁面設定 ===
 st.set_page_config(
     page_title="永傳影響力傳承平台｜客戶入口",
     page_icon=str(FAVICON) if FAVICON.exists() else "✨",
     layout="wide",
 )
 
-# === CSS：調整亮點區（metric）的字級與顏色 ===
+# === CSS ===
 st.markdown("""
 <style>
-/* 亮點數字：縮小、加粗、藍色 */
+/* 亮點數字 */
 div[data-testid="stMetricValue"] {
     font-size: 20px !important;
     font-weight: 700 !important;
     color: #1e40af !important;
 }
-/* 亮點標籤：加大一號、加粗、深灰藍 */
+/* 亮點標籤 */
 div[data-testid="stMetricLabel"] {
     font-size: 18px !important;
     font-weight: 700 !important;
     color: #1e293b !important;
 }
+/* 按鈕樣式 */
+div.stButton > button:first-child,
+div.stDownloadButton > button {
+    background-color: #2563eb;
+    color: white;
+    border-radius: 8px;
+    padding: 0.5em 1em;
+    font-weight: 600;
+}
+div.stButton > button:first-child:hover,
+div.stDownloadButton > button:hover {
+    background-color: #1d4ed8;
+    color: white;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# === PDF 繁中（ReportLab 字型註冊） ===
+# === PDF 繁中字型 ===
 FONT_NAME = "NotoSansTC"
 if FONT.exists():
     try:
         pdfmetrics.registerFont(TTFont(FONT_NAME, str(FONT)))
-    except Exception as e:
-        st.sidebar.warning(f"無法載入字型：{e}")
-else:
-    st.sidebar.info("提示：把 NotoSansTC-Regular.ttf 放在根目錄，PDF 才能正確顯示繁體中文。")
+    except Exception:
+        st.sidebar.warning("⚠️ 無法載入字型")
 
-# === 可選整合（Secrets 啟用）：Google Sheets + SendGrid ===
-INTEGRATIONS = {"has_gsheet": False, "has_sendgrid": False, "sheet_id": None, "notify_email": None}
-
-# Google Sheets
-try:
-    if "gcp_service_account" in st.secrets and "SHEET_ID" in st.secrets:
-        import gspread
-        from google.oauth2.service_account import Credentials
-        SCOPES = ["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=SCOPES)
-        gclient = gspread.authorize(creds)
-        INTEGRATIONS["has_gsheet"] = True
-        INTEGRATIONS["sheet_id"] = st.secrets["SHEET_ID"]
-except Exception:
-    st.sidebar.warning("⚠️ Google Sheets 尚未設定或金鑰有誤（目前以離線模式運作）。")
-
-# SendGrid
-try:
-    if "SENDGRID_API_KEY" in st.secrets and st.secrets["SENDGRID_API_KEY"]:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
-        INTEGRATIONS["has_sendgrid"] = True
-    if "NOTIFY_EMAIL" in st.secrets and st.secrets["NOTIFY_EMAIL"]:
-        INTEGRATIONS["notify_email"] = st.secrets["NOTIFY_EMAIL"]
-except Exception:
-    st.sidebar.warning("⚠️ Email 通知尚未設定（會提供 mailto 傳送）。")
-
-def append_row(sheet_title: str, row: list):
-    if not INTEGRATIONS["has_gsheet"]:
-        return False, "GSHEET_DISABLED"
-    try:
-        sh = gclient.open_by_key(INTEGRATIONS["sheet_id"])
-        try:
-            ws = sh.worksheet(sheet_title)
-        except Exception:
-            ws = sh.add_worksheet(title=sheet_title, rows=1000, cols=20)
-            ws.append_row(["timestamp","name","email","phone","note","source"], value_input_option="USER_ENTERED")
-        ws.append_row(row, value_input_option="USER_ENTERED")
-        return True, "OK"
-    except Exception as e:
-        return False, str(e)
-
-def send_email(subject: str, html: str):
-    if not INTEGRATIONS["has_sendgrid"] or not INTEGRATIONS["notify_email"]:
-        return False, "EMAIL_DISABLED"
-    try:
-        sg = SendGridAPIClient(st.secrets["SENDGRID_API_KEY"])
-        message = Mail(from_email=INTEGRATIONS["notify_email"], to_emails=INTEGRATIONS["notify_email"],
-                       subject=subject, html_content=html)
-        resp = sg.send(message)
-        return True, f"Status {resp.status_code}"
-    except Exception as e:
-        return False, str(e)
-
-# === 頂部框（含 base64 內嵌 logo；刪除指定句子） ===
+# === 頂部框 ===
 logo_b64 = get_base64_of_file(LOGO)
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
 
@@ -135,12 +93,12 @@ st.markdown(
         以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。
       </p>
     </div>
-    <br/>  <!-- 空一行 -->
+    <br/>
     """,
     unsafe_allow_html=True
 )
 
-# === 亮點區（字級由上方 CSS 控制） ===
+# === 亮點區 ===
 c1, c2, c3 = st.columns(3)
 c1.metric("快速掌握傳承全貌", "約 7 分鐘")
 c2.metric("顧問端效率", "提升 3×")
@@ -152,34 +110,71 @@ st.subheader("用 AI 先看見，再決定")
 # === Tabs ===
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
-# Tab1：遺產稅試算（示意）
+# === Tab1: 遺產稅快速估算 ===
 with tab1:
-    st.caption("輸入大致資產與扣除額，立即看見稅額區間（示意用途，實務請由顧問確認）")
+    st.caption("輸入大致資產，系統自動計算稅額，並根據家庭狀況顯示扣除額。")
+
     col1, col2 = st.columns(2)
     with col1:
         estate = st.number_input("估算總資產（TWD）", min_value=0, step=1_000_000, value=120_000_000)
     with col2:
-        deduct = st.number_input("可扣除額（TWD）", min_value=0, step=500_000, value=0)
-    free_amount = 12_000_000
-    taxable = max(estate - deduct - free_amount, 0)
+        family_type = st.selectbox(
+            "請選擇家庭狀況",
+            ["未婚無子女", "已婚有配偶無子女", "已婚有配偶與子女", "有父母健在", "單身有子女"]
+        )
+
+    heirs = ""
+    deductions = 12_000_000  # 基本免稅額
+    if family_type == "未婚無子女":
+        heirs = "父母、兄弟姊妹"
+        deductions += 4_000_000
+    elif family_type == "已婚有配偶無子女":
+        heirs = "配偶、父母"
+        deductions += 4_000_000 + 4_000_000
+    elif family_type == "已婚有配偶與子女":
+        heirs = "配偶、子女"
+        deductions += 4_000_000 + 2_000_000 * 2
+    elif family_type == "有父母健在":
+        heirs = "父母"
+        deductions += 4_000_000
+    elif family_type == "單身有子女":
+        heirs = "子女"
+        deductions += 2_000_000 * 2
+
+    st.info(f"👉 法定繼承人：{heirs}")
+    st.success(f"👉 可適用扣除額：約 NT$ {deductions:,.0f}")
+
+    taxable = max(estate - deductions, 0)
     if taxable <= 50_000_000:
         tax = taxable * 0.10
     elif taxable <= 100_000_000:
         tax = 5_000_000 + (taxable - 50_000_000) * 0.15
     else:
         tax = 12_500_000 + (taxable - 100_000_000) * 0.20
-    st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
-    st.caption("💡 以壽險承接＋指定受益搭配信託，可望進一步優化稅務與風險（需個案評估）。")
 
-# Tab2：傳承快照 PDF
+    st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
+
+# === Tab2: 傳承快照 PDF ===
 with tab2:
-    st.caption("先把最重要的人放進地圖，再談工具（PDF 供內部討論用）")
+    st.caption("快速輸入／點選，生成傳承快照 PDF")
+
+    # --- 快速詞彙 ---
+    st.caption("常見的傳承顧慮（可點選快速加入）")
+    suggested_concerns = ["稅負過高", "婚前財產隔離", "企業接班", "現金流不足", "遺囑設計", "信託安排"]
+    if "concerns" not in st.session_state:
+        st.session_state.concerns = ""
+
+    cols = st.columns(len(suggested_concerns))
+    for i, word in enumerate(suggested_concerns):
+        if cols[i].button(word, key=f"concern_{i}"):
+            st.session_state.concerns += ("" if st.session_state.concerns == "" else "\n") + word
+
     with st.form("legacy_form"):
         who = st.text_input("想優先照顧的人（例如：太太／兒女／長輩）")
         assets = st.text_area("主要資產（公司股權、不動產、金融資產、保單、海外資產、其他）")
-        concerns = st.text_area("傳承顧慮（稅負、婚前財產、接班、現金流、遺囑或信託等）")
-        email_for_pdf = st.text_input("（可選）留下 Email，方便我們把快照寄給您")
+        concerns = st.text_area("傳承顧慮（可自行補充）", value=st.session_state.concerns)
         submitted = st.form_submit_button("生成傳承快照 PDF")
+
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
@@ -208,65 +203,19 @@ with tab2:
         line("傳承顧慮：", 12, 18, bold=True)
         for row in (concerns or "（尚未填寫）").split("\n"):
             line(f"• {row}", 11, 16)
-        line.y -= 18
-        c.setFont(FONT_NAME if FONT.exists() else "Helvetica-Oblique", 9)
-        c.drawString(60, line.y, "＊本文件為教育用途，不構成任何金融商品或法律稅務建議。最終規劃以顧問與專業人士協作結果為準。")
-        c.showPage()
-        c.save()
+
+        c.showPage(); c.save()
 
         st.download_button("下載 PDF", data=buf.getvalue(), file_name="永傳_傳承快照.pdf", mime="application/pdf")
-        st.success("已生成 PDF，適合作為與導師討論的起點。")
+        st.success("已生成 PDF，可作為與導師討論的起點。")
 
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if INTEGRATIONS["has_gsheet"]:
-            ok, msg = append_row("Leads", [ts, "", email_for_pdf or "", "", f"who:{who}; concerns:{(concerns or '')[:60]}", "legacy_snapshot"])
-            if ok:
-                st.toast("✅ 已記錄到 Google Sheet：Leads")
-            else:
-                st.warning(f"⚠️ Google Sheet 寫入失敗：{msg}")
-
-# Tab3：預約表單
+# === Tab3: 預約 ===
 with tab3:
-    st.caption("7 分鐘工具體驗後，預約深入討論更有感")
     with st.form("booking_form"):
         name = st.text_input("您的稱呼")
         email = st.text_input("Email")
         phone = st.text_input("聯絡電話")
-        note = st.text_area("想優先解決的問題（例如：稅負、現金流、指定受益、跨境等）")
+        note = st.text_area("想優先解決的問題")
         ok = st.form_submit_button("送出預約需求")
     if ok:
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if INTEGRATIONS["has_gsheet"]:
-            ok1, msg1 = append_row("Bookings", [ts, name, email, phone, note, "web_form"])
-            if ok1:
-                st.toast("✅ 已寫入 Google Sheet：Bookings")
-            else:
-                st.warning(f"⚠️ Google Sheet 寫入失敗：{msg1}")
-        if INTEGRATIONS["has_sendgrid"] and INTEGRATIONS["notify_email"]:
-            subject = f"【永傳預約】{name or '未留名'}"
-            html = f"""<p>時間：{ts}</p><p>姓名：{name}</p><p>Email：{email}</p><p>電話：{phone}</p><p>需求：{note}</p>"""
-            ok2, msg2 = send_email(subject, html)
-            if ok2:
-                st.toast("📧 已寄出 Email 通知")
-            else:
-                st.warning(f"⚠️ Email 發送失敗：{msg2}")
-        st.success("我們已收到您的預約需求。工作日內會與您聯繫，安排 20–30 分鐘初談。")
-        if not INTEGRATIONS["has_sendgrid"]:
-            mailto = f"mailto:123@gracefo.com?subject=【永傳預約】{name or '未填名'}&body=" + f"Email:{email}%0A電話:{phone}%0A需求:{note}"
-            st.markdown(f"[或直接寄信通知我們]({mailto})")
-
-st.write("---")
-left, right = st.columns([2,1])
-with left:
-    st.markdown("""
-**永傳家族傳承導師**  
-傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。
-""")
-with right:
-    st.markdown("""
-**聯絡**
-- 官網：gracefo.com  
-- 信箱：123@gracefo.com  
-- LINE／QR：請置入圖片（images/line_qr.png）
-""")
-st.caption(f"© {datetime.now().year} 《影響力》傳承策略平台｜永傳家族辦公室")
+        st.success("我們已收到您的預約需求。")
