@@ -116,7 +116,7 @@ st.subheader("用 AI 先看見，再決定")
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
 # ============================================================
-# Tab1: 遺產稅快速估算（萬位輸入 + 扣除額明細 + 應繼分）
+# Tab1: 遺產稅快速估算（萬位輸入 + 扣除額明細 + 應繼分 + 稅額明細）
 # ============================================================
 with tab1:
     st.caption("輸入資產（萬）與家庭狀況，依民法第1138條推算法定繼承人，並計算扣除額與遺產稅（示意用途）。")
@@ -154,7 +154,7 @@ with tab1:
         deduction_wan += children_count * 56
     if parents_count > 0:
         deduction_wan += min(parents_count, 2) * 138
-    deductions = deduction_wan * 10_000  # 轉 TWD
+    deductions = deduction_wan * 10_000  # 元
 
     # 5) 法定繼承人（民法1138 簡化）
     heirs = []
@@ -231,14 +231,44 @@ with tab1:
 
     if taxable <= BRACKET1:
         tax = RATE1 * taxable
+        bracket_used = f"10% × {taxable:,.0f}"
+        part1 = f"10% × {taxable:,.0f} = {tax:,.0f}"
+        part2 = part3 = None
     elif taxable <= BRACKET2:
         tax = RATE1 * BRACKET1 + RATE2 * (taxable - BRACKET1)
+        part1_val = RATE1 * BRACKET1
+        part2_val = RATE2 * (taxable - BRACKET1)
+        bracket_used = f"10% / 15%"
+        part1 = f"10% × {BRACKET1:,.0f} = {part1_val:,.0f}"
+        part2 = f"15% × ({taxable:,.0f} − {BRACKET1:,.0f}) = {part2_val:,.0f}"
+        part3 = None
     else:
         tax = (RATE1 * BRACKET1
                + RATE2 * (BRACKET2 - BRACKET1)
                + RATE3 * (taxable - BRACKET2))
+        part1_val = RATE1 * BRACKET1
+        part2_val = RATE2 * (BRACKET2 - BRACKET1)
+        part3_val = RATE3 * (taxable - BRACKET2)
+        bracket_used = f"10% / 15% / 20%"
+        part1 = f"10% × {BRACKET1:,.0f} = {part1_val:,.0f}"
+        part2 = f"15% × ({BRACKET2:,.0f} − {BRACKET1:,.0f}) = {part2_val:,.0f}"
+        part3 = f"20% × ({taxable:,.0f} − {BRACKET2:,.0f}) = {part3_val:,.0f}"
 
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
+
+    # ▾ 稅額計算明細（預設縮合）—— 放在預估稅額正下方
+    with st.expander("查看遺產稅計算明細", expanded=False):
+        st.write(f"- 輸入總資產：{total_wan:,} 萬 ＝ NT$ {estate:,.0f}")
+        st.write(f"- 扣除額合計：{deduction_wan:,} 萬 ＝ NT$ {deductions:,.0f}")
+        st.write(f"- 應稅遺產淨額：NT$ {taxable:,.0f}")
+        st.write(f"- 套用級距：{bracket_used}")
+        st.write("— — —")
+        if part1: st.write(part1)
+        if part2: st.write(part2)
+        if part3: st.write(part3)
+        st.write("— — —")
+        st.write(f"＝ 預估遺產稅額：NT$ {tax:,.0f}")
+
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
