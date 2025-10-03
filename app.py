@@ -5,6 +5,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import ImageReader
 from pathlib import Path
 import base64
 
@@ -187,7 +188,7 @@ with tab1:
         if parents_count > 0:
             st.write(f"- 父母扣除額：{min(parents_count,2)} × 138 萬 = {min(parents_count,2) * 138} 萬")
 
-    # 6) 應繼分（你指定的規則）
+    # 6) 應繼分（依你指定規則）
     shares = {}
     if heirs:
         if "子女" in heirs:
@@ -222,7 +223,7 @@ with tab1:
         for k, v in shares.items():
             st.write(f"- {k}：{v:.2%}")
 
-    # 7) 稅額試算（✅ 使用新級距 5,621 萬／11,242 萬）
+    # 7) 稅額試算（新級距 5,621 萬／11,242 萬）
     BRACKET1 = 56_210_000
     BRACKET2 = 112_420_000
     RATE1, RATE2, RATE3 = 0.10, 0.15, 0.20
@@ -256,7 +257,7 @@ with tab1:
 
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
 
-    # ▾ 稅額計算明細（預設縮合）—— 放在預估稅額正下方
+    # ▾ 稅額計算明細（放在預估稅額正下方；預設縮合）
     with st.expander("查看遺產稅計算明細", expanded=False):
         st.write(f"- 輸入總資產：{total_wan:,} 萬 ＝ NT$ {estate:,.0f}")
         st.write(f"- 扣除額合計：{deduction_wan:,} 萬 ＝ NT$ {deductions:,.0f}")
@@ -272,7 +273,7 @@ with tab1:
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
-# Tab2: 傳承快照 PDF（快選字在輸入框上方）
+# Tab2: 傳承快照 PDF（快選字在輸入框上方 + PDF 加 logo 與品牌文案）
 # ============================================================
 with tab2:
     st.caption("快速點選＋輸入，生成傳承快照 PDF（供內部討論用）")
@@ -292,18 +293,54 @@ with tab2:
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
-        w, h = A4
+        w, h = A4  # (595.27, 841.89) points，1 inch = 72 pt
 
+        # ===== 頁首：logo + 品牌標題與標語 =====
+        top_margin = h - 60
+        x_padding = 60
+
+        # 畫 logo（若存在）
+        if LOGO.exists():
+            try:
+                logo_img = ImageReader(str(LOGO))
+                # 高度 28 pt，等比縮放
+                logo_h = 28
+                # 估計寬高比，讓 reportlab 自行按高度縮放
+                c.drawImage(logo_img, x_padding, top_margin - logo_h, height=logo_h, preserveAspectRatio=True, mask='auto')
+                text_start_y = top_margin - logo_h - 8
+            except Exception:
+                text_start_y = top_margin
+        else:
+            text_start_y = top_margin
+
+        # 字型選擇
+        TITLE_FONT = FONT_NAME if FONT.exists() else "Helvetica-Bold"
+        BODY_FONT = FONT_NAME if FONT.exists() else "Helvetica"
+
+        # 標題與標語
+        c.setFont(TITLE_FONT, 14)
+        c.drawString(x_padding, text_start_y, "永傳家族傳承導師")
+        text_start_y -= 18
+        c.setFont(BODY_FONT, 11)
+        c.drawString(x_padding, text_start_y, "傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。")
+        text_start_y -= 14
+
+        # 內文起始游標（給 line() 用）
         def line(text, size=12, gap=18, bold=False):
-            font = FONT_NAME if FONT.exists() else ("Helvetica-Bold" if bold else "Helvetica")
+            font = TITLE_FONT if (bold and FONT.exists()) else (FONT_NAME if FONT.exists() else ("Helvetica-Bold" if bold else "Helvetica"))
+            # 若無中文字型，粗體退回 Helvetica-Bold
+            if not FONT.exists():
+                font = "Helvetica-Bold" if bold else "Helvetica"
             c.setFont(font, size)
             y = line.y
             for seg in text.split("\n"):
-                c.drawString(60, y, seg)
+                c.drawString(x_padding, y, seg)
                 y -= gap
             line.y = y
-        line.y = h - 72
 
+        line.y = text_start_y - 6
+
+        # ===== 內容區 =====
         c.setTitle("永傳｜傳承快照")
         line("永傳影響力傳承平台｜傳承快照", 16, 24, bold=True)
         line(f"日期：{datetime.now().strftime('%Y-%m-%d %H:%M')}", 11, 16)
@@ -312,16 +349,24 @@ with tab2:
         line.y -= 6
         line("主要資產：", 12, 18, bold=True)
         for row in (assets or "（尚未填寫）").split("\n"):
-            line(f"• {row}", 11, 16)
+            if row.strip():
+                line(f"• {row.strip()}", 11, 16)
         line.y -= 6
         line("傳承顧慮：", 12, 18, bold=True)
         for row in (concerns or "（尚未填寫）").split("\n"):
-            line(f"• {row}", 11, 16)
+            if row.strip():
+                line(f"• {row.strip()}", 11, 16)
+
+        # ===== 頁尾品牌訊息 =====
+        footer_text = "© 2025 《影響力》傳承策略平台｜永傳家族辦公室"
+        c.setFont(BODY_FONT, 10)
+        c.drawRightString(w - x_padding, 36, footer_text)
 
         c.showPage(); c.save()
+
         st.download_button("下載 PDF", data=buf.getvalue(),
                            file_name="永傳_傳承快照.pdf", mime="application/pdf")
-        st.success("已生成 PDF，可作為與導師討論的起點。")
+        st.success("已生成 PDF（含 logo 與品牌文案），可作為與導師討論的起點。")
 
 # ============================================================
 # Tab3: 預約顧問（同風格快選）
