@@ -5,7 +5,7 @@ from src.ui.components import hide_streamlit_chrome, topbar, page_footer
 from src.utils.state import init_state
 from src.utils.auth import login_block, get_user
 
-from src.modules import estate_tax, insurance_planner, asset_map, values_explorer
+from src.modules import estate_tax, insurance_planner, insurance_planner_plus, asset_map, asset_map_export, values_explorer
 
 st.set_page_config(page_title=APP_TITLE, page_icon=APP_ICON, layout=APP_LAYOUT)
 
@@ -19,8 +19,8 @@ if not user:
 
 topbar(user.display_name, user.end_date, BRAND["logo_path"])
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🏛️ 遺產稅試算", "📦 保單規劃", "🗺️ 傳承圖", "💛 價值觀探索"
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🏛️ 遺產稅試算", "📦 保單規劃（基礎）", "📦 贈與壓縮＋分期給付", "🗺️ 傳承圖", "🗺️ 構成輸出", "💛 價值觀探索"
 ])
 
 with tab1:
@@ -28,8 +28,12 @@ with tab1:
 with tab2:
     insurance_planner.render()
 with tab3:
-    asset_map.render()
+    insurance_planner_plus.render()
 with tab4:
+    asset_map.render()
+with tab5:
+    asset_map_export.render()
+with tab6:
     values_explorer.render()
 
 page_footer()
