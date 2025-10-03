@@ -87,7 +87,7 @@ st.markdown(
       </div>
       <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;
                  color:#1e3a8a;font-weight:700">
-        AI × 財稅 × 傳承：<br/>您的「數位家族辦公室」入口
+        AI × 財稅 × 傳承：您的「數位家族辦公室」入口
       </h2>
       <p style="color:#475569;margin:0;font-size:14px">
         以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。
@@ -158,21 +158,33 @@ with tab1:
 with tab2:
     st.caption("快速輸入／點選，生成傳承快照 PDF")
 
-    # --- 快速詞彙 ---
+    # --- 快速詞彙：主要資產 ---
+    st.caption("常見的主要資產（可點選快速加入）")
+    suggested_assets = ["公司股權", "不動產", "金融資產", "保單", "海外資產", "其他"]
+    if "assets_text" not in st.session_state:
+        st.session_state.assets_text = ""
+
+    cols = st.columns(len(suggested_assets))
+    for i, word in enumerate(suggested_assets):
+        if cols[i].button(word, key=f"asset_{i}"):
+            st.session_state.assets_text += ("" if st.session_state.assets_text == "" else "\n") + word
+
+    # --- 快速詞彙：傳承顧慮 ---
     st.caption("常見的傳承顧慮（可點選快速加入）")
     suggested_concerns = ["稅負過高", "婚前財產隔離", "企業接班", "現金流不足", "遺囑設計", "信託安排"]
-    if "concerns" not in st.session_state:
-        st.session_state.concerns = ""
+    if "concerns_text" not in st.session_state:
+        st.session_state.concerns_text = ""
 
     cols = st.columns(len(suggested_concerns))
     for i, word in enumerate(suggested_concerns):
         if cols[i].button(word, key=f"concern_{i}"):
-            st.session_state.concerns += ("" if st.session_state.concerns == "" else "\n") + word
+            st.session_state.concerns_text += ("" if st.session_state.concerns_text == "" else "\n") + word
 
+    # --- 表單 ---
     with st.form("legacy_form"):
         who = st.text_input("想優先照顧的人（例如：太太／兒女／長輩）")
-        assets = st.text_area("主要資產（公司股權、不動產、金融資產、保單、海外資產、其他）")
-        concerns = st.text_area("傳承顧慮（可自行補充）", value=st.session_state.concerns)
+        assets = st.text_area("主要資產", value=st.session_state.assets_text)
+        concerns = st.text_area("傳承顧慮", value=st.session_state.concerns_text)
         submitted = st.form_submit_button("生成傳承快照 PDF")
 
     if submitted:
@@ -211,11 +223,24 @@ with tab2:
 
 # === Tab3: 預約 ===
 with tab3:
+    st.caption("7 分鐘工具體驗後，預約深入討論更有感")
+
+    # --- 快速詞彙：需求 ---
+    st.caption("常見需求（可點選快速加入）")
+    suggested_needs = ["稅負規劃", "現金流安排", "保單傳承", "跨境資產", "企業接班"]
+    if "needs_text" not in st.session_state:
+        st.session_state.needs_text = ""
+
+    cols = st.columns(len(suggested_needs))
+    for i, word in enumerate(suggested_needs):
+        if cols[i].button(word, key=f"need_{i}"):
+            st.session_state.needs_text += ("" if st.session_state.needs_text == "" else "\n") + word
+
     with st.form("booking_form"):
         name = st.text_input("您的稱呼")
         email = st.text_input("Email")
         phone = st.text_input("聯絡電話")
-        note = st.text_area("想優先解決的問題")
+        note = st.text_area("想優先解決的問題", value=st.session_state.needs_text)
         ok = st.form_submit_button("送出預約需求")
     if ok:
         st.success("我們已收到您的預約需求。")
