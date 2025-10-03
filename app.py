@@ -9,7 +9,7 @@ from pathlib import Path
 import base64
 
 # === 檔案路徑 ===
-LOGO = Path("logo.png")                # 中央顯示的品牌 logo（改為 base64 內嵌）
+LOGO = Path("logo.png")                # 中央顯示的品牌 logo（以 base64 內嵌）
 FAVICON = Path("logo2.png")            # 瀏覽器分頁小圖示
 FONT = Path("NotoSansTC-Regular.ttf")  # PDF 繁中 TrueType 字型
 
@@ -29,17 +29,20 @@ st.set_page_config(
     layout="wide",
 )
 
-# === CSS：調整 st.metric 的字級與顏色（縮小 2 號並加粗） ===
+# === CSS：調整亮點區（metric）的字級與顏色 ===
 st.markdown("""
 <style>
+/* 亮點數字：縮小、加粗、藍色 */
 div[data-testid="stMetricValue"] {
-    font-size: 20px !important;    /* 原本很大，這裡縮小 */
-    font-weight: 700 !important;   /* 加粗 */
-    color: #1e40af !important;     /* 可改成你的品牌色 */
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #1e40af !important;
 }
+/* 亮點標籤：加大一號、加粗、深灰藍 */
 div[data-testid="stMetricLabel"] {
-    font-size: 14px !important;
-    color: #475569 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -108,30 +111,36 @@ def send_email(subject: str, html: str):
     except Exception as e:
         return False, str(e)
 
-# === 頁面頂區（含 base64 內嵌 logo） ===
+# === 頂部框（含 base64 內嵌 logo；刪除指定句子） ===
 logo_b64 = get_base64_of_file(LOGO)
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
 
 st.markdown(
     f"""
-    <div style="padding:24px;border-radius:24px;background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);border:1px solid rgba(15,23,42,0.12)">
+    <div style="padding:24px;border-radius:24px;
+                background:linear-gradient(135deg,#eef2ff,#ffffff,#ecfdf5);
+                border:1px solid rgba(15,23,42,0.12)">
       <div style="display:flex;align-items:center;gap:12px;">
         {logo_html}
-        <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#4f46e5;color:#fff;font-size:12px">永傳家族傳承導師</span>
+        <span style="display:inline-block;padding:6px 10px;border-radius:999px;
+                     background:#4f46e5;color:#fff;font-size:12px">
+            永傳家族傳承導師
+        </span>
       </div>
-      <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;color:#1e3a8a;font-weight:700">
+      <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;
+                 color:#1e3a8a;font-weight:700">
         AI × 財稅 × 傳承：<br/>您的「數位家族辦公室」入口
       </h2>
       <p style="color:#475569;margin:0;font-size:14px">
-        以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。<br/>
-        我們不推商品，只推動「讓重要的人真的被照顧到」。
+        以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。
       </p>
     </div>
+    <br/>  <!-- 空一行 -->
     """,
     unsafe_allow_html=True
 )
 
-# === 亮點（字級由上方 CSS 控制） ===
+# === 亮點區（字級由上方 CSS 控制） ===
 c1, c2, c3 = st.columns(3)
 c1.metric("快速掌握傳承全貌", "約 7 分鐘")
 c2.metric("顧問端效率", "提升 3×")
