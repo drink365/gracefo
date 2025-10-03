@@ -35,7 +35,7 @@ st.set_page_config(
 )
 
 # ----------------------------
-# 全域樣式（標籤改極簡無底色）
+# 全域樣式（低調標籤）
 # ----------------------------
 st.markdown("""
 <style>
@@ -51,19 +51,19 @@ div.stButton > button:first-child, div.stDownloadButton > button{
 }
 div.stButton > button:first-child:hover, div.stDownloadButton > button:hover{ background:#1d4ed8; color:#fff; }
 
-/* ------ 低調標籤（文字勾選列） ------ */
+/* 低調橫向勾選列 */
 .inline-checks{ display:flex; flex-wrap:wrap; gap:14px; margin:6px 0 6px 0; }
 .inline-checks label{ font-size:13px; color:#334155; cursor:pointer; }
 .inline-checks label:hover{ text-decoration: underline; }
 .inline-checks input{ transform: scale(1.0); margin-right:6px; }
 
-/* Select 與 Textarea 圓角 */
+/* 圓角輸入元件 */
 div[data-baseweb="select"] > div, textarea, input[type="text"]{ border-radius:8px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# PDF 繁中字型（可選）
+# PDF 字型
 # ----------------------------
 FONT_NAME = "NotoSansTC"
 if FONT.exists():
@@ -75,11 +75,10 @@ else:
     st.sidebar.info("提示：放入 NotoSansTC-Regular.ttf 以支援 PDF 繁中")
 
 # ----------------------------
-# 頂部區塊（Base64 logo；標題同一行）
+# 頂部區塊
 # ----------------------------
 logo_b64 = get_base64_of_file(LOGO)
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
-
 st.markdown(
     f"""
     <div style="padding:24px;border-radius:24px;
@@ -119,13 +118,13 @@ st.subheader("用 AI 先看見，再決定")
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
 # ============================================================
-# Tab1: 遺產稅快速估算（萬位輸入 + 扣除額明細 + 應繼分 + 稅額明細）
+# Tab1: 遺產稅快速估算
 # ============================================================
 with tab1:
     st.caption("輸入資產（萬）與家庭狀況，依民法第1138條推算法定繼承人，並計算扣除額與遺產稅（示意用途）。")
 
     total_wan = st.number_input("總資產（萬）", min_value=0, step=100, value=30000)
-    estate = total_wan * 10_000  # 轉為 TWD
+    estate = total_wan * 10_000
 
     st.divider()
     st.markdown("### 請輸入家庭成員")
@@ -150,17 +149,16 @@ with tab1:
     if has_spouse: deduction_wan += 553
     if children_count > 0: deduction_wan += children_count * 56
     if parents_count > 0: deduction_wan += min(parents_count, 2) * 138
-    deductions = deduction_wan * 10_000  # 元
+    deductions = deduction_wan * 10_000
 
     heirs = []
     if children_count > 0: heirs = ["子女"]
     elif parents_count > 0: heirs = ["父母"]
     elif has_siblings: heirs = ["兄弟姊妹"]
     elif has_grandparents: heirs = ["祖父母"]
-    else: heirs = []
     if has_spouse: heirs = ["配偶"] + heirs
-
     heirs_str = "、".join(heirs) if heirs else "（無繼承人 → 遺產歸國庫）"
+
     st.info(f"👉 法定繼承人（民法1138條示意）：{heirs_str}")
     st.success(f"👉 扣除額合計：約 NT$ {deductions:,.0f}")
 
@@ -230,44 +228,41 @@ with tab1:
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
-# Tab2: 傳承快照 PDF（每個主題：標題 → 低調標籤 → 輸入框）
+# Tab2: 傳承快照 PDF（每主題：標題 → 低調標籤 → 輸入框）
 # ============================================================
 with tab2:
     st.caption("勾選幾個關鍵點，補充你的文字，生成傳承快照 PDF。")
 
-    # 低調橫向勾選列
     def inline_checks(title:str, options:list[str], key_prefix:str, default:list[str]=None):
         if default is None: default = []
         st.markdown(f"### {title}")
-        # 以純 HTML 建一排 label + checkbox，樣式由 .inline-checks 控制
         selected = []
-        cols = st.columns(len(options)) if len(options) <= 6 else st.columns(6)
+        cols = st.columns(min(6, max(1, len(options))))
         for i, opt in enumerate(options):
             with cols[i % len(cols)]:
                 checked = st.checkbox(opt, key=f"{key_prefix}_{i}", value=(opt in default))
                 if checked: selected.append(opt)
-        # 讓排版間距一致
         st.markdown('<div class="inline-checks"></div>', unsafe_allow_html=True)
         return selected
 
     # 1) 想優先照顧的人
     who_options = ["配偶", "子女", "父母", "兄弟姊妹", "祖父母", "其他"]
     who_selected = inline_checks("想優先照顧的人（例如：太太／兒女／長輩）", who_options, "who")
-    who = st.text_input("（可自行補充）", value="、".join(who_selected))
+    who = st.text_input("（可自行補充）", value="、".join(who_selected), key="who_free")
 
-    st.write("")  # 小間距
+    st.write("")
 
     # 2) 主要資產
     assets_options = ["公司股權", "不動產", "金融資產", "保單", "海外資產", "其他"]
     assets_selected = inline_checks("主要資產（可自行補充）", assets_options, "assets")
-    assets = st.text_area("（可自行補充）", value="\n".join(assets_selected), height=120)
+    assets = st.text_area("（可自行補充）", value="\n".join(assets_selected), height=120, key="assets_free")
 
     st.write("")
 
     # 3) 傳承顧慮
     concerns_options = ["稅負過高", "婚前財產隔離", "企業接班", "現金流不足", "遺囑設計", "信託安排"]
     concerns_selected = inline_checks("傳承顧慮（可自行補充）", concerns_options, "concerns")
-    concerns = st.text_area("（可自行補充）", value="\n".join(concerns_selected), height=120)
+    concerns = st.text_area("（可自行補充）", value="\n".join(concerns_selected), height=120, key="concerns_free")
 
     # 生成 PDF
     if st.button("生成傳承快照 PDF"):
@@ -279,7 +274,7 @@ with tab2:
         TITLE_FONT = FONT_NAME if FONT.exists() else "Helvetica-Bold"
         BODY_FONT  = FONT_NAME if FONT.exists() else "Helvetica"
 
-        # Logo：三層保險嵌入
+        # Logo 三層保險嵌入
         text_y = y_top
         logo_drawn = False
         if LOGO.exists():
@@ -309,7 +304,6 @@ with tab2:
             text_y = y_top - 40
             st.warning("⚠️ PDF 無法嵌入 logo.png，已以占位符代替。")
 
-        # 行文字工具
         def line(text, size=12, gap=18, bold=False):
             font = TITLE_FONT if bold else BODY_FONT
             c.setFont(font, size)
@@ -320,7 +314,6 @@ with tab2:
             line.y = y
         line.y = text_y
 
-        # 內容
         c.setTitle("永傳｜傳承快照")
         line("永傳影響力傳承平台｜傳承快照", 16, 24, bold=True)
         line(f"日期：{datetime.now().strftime('%Y-%m-%d %H:%M')}", 11, 18)
@@ -338,7 +331,6 @@ with tab2:
             row = row.strip()
             if row: line(f"• {row}", 11, 16)
 
-        # 分隔線 + 暖心收尾
         line.y -= 8
         c.setStrokeColorRGB(0.82, 0.84, 0.88)
         c.setLineWidth(0.6)
@@ -347,7 +339,6 @@ with tab2:
         line("永傳家族傳承導師", 12, 18, bold=True)
         line("傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。", 11, 18)
 
-        # 版權
         c.setFont(BODY_FONT, 10)
         c.drawRightString(w - x_pad, y_footer, "© 2025 《影響力》傳承策略平台｜永傳家族辦公室")
 
@@ -357,7 +348,7 @@ with tab2:
         st.success("已生成 PDF（含 Logo、分隔線與暖心收尾）。")
 
 # ============================================================
-# Tab3: 預約顧問（簡潔）
+# Tab3: 預約顧問
 # ============================================================
 with tab3:
     st.caption("7 分鐘工具體驗後，預約深入討論更有感")
