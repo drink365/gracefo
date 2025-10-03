@@ -2,14 +2,16 @@
 import streamlit as st
 from src.config import APP_TITLE, APP_ICON, APP_LAYOUT, BRAND
 from src.ui.components import hide_streamlit_chrome, topbar, page_footer
+from src.ui.typography import setup_cjk_font
 from src.utils.state import init_state
 from src.utils.auth import login_block, get_user
 
 from src.modules import estate_tax, insurance_planner, insurance_planner_plus, asset_map, asset_map_export, values_explorer
 
-st.set_page_config(page_title=APP_TITLE, page_icon=APP_ICON, layout=APP_LAYOUT)
+st.set_page_config(page_title=APP_TITLE, page_icon="assets/favicon.png", layout=APP_LAYOUT)
 
 hide_streamlit_chrome()
+setup_cjk_font("assets/NotoSansTC-Regular.ttf")
 init_state()
 
 user = get_user()
