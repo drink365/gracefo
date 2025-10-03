@@ -35,6 +35,7 @@ st.set_page_config(
 # CSS 樣式
 st.markdown("""
 <style>
+/* Tabs：未選／已選 */
 button[role="tab"]{
     background:#f1f5f9; color:#1e293b; font-weight:600;
     padding:6px 12px; border-radius:8px 8px 0 0; margin-right:4px;
@@ -43,12 +44,14 @@ button[role="tab"]{
 button[role="tab"][aria-selected="true"]{
     background:#2563eb !important; color:#fff !important;
 }
+/* 亮點數字與標籤 */
 div[data-testid="stMetricValue"]{
     font-size:20px !important; font-weight:700 !important; color:#1e40af !important;
 }
 div[data-testid="stMetricLabel"]{
     font-size:18px !important; font-weight:700 !important; color:#1e293b !important;
 }
+/* 主要按鈕底色 */
 div.stButton > button:first-child,
 div.stDownloadButton > button{
     background:#2563eb; color:#fff; border-radius:8px; padding:.5em 1em; font-weight:600;
@@ -57,12 +60,13 @@ div.stButton > button:first-child:hover,
 div.stDownloadButton > button:hover{
     background:#1d4ed8; color:#fff;
 }
+/* multiselect：圓角、低調邊框 */
 div[data-baseweb="select"] > div{ border-radius:8px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# PDF 字型
+# PDF 字型（可選）
 # ----------------------------
 FONT_NAME = "NotoSansTC"
 if FONT.exists():
@@ -74,7 +78,7 @@ else:
     st.sidebar.info("提示：放入 NotoSansTC-Regular.ttf 以支援 PDF 繁中")
 
 # ----------------------------
-# 頂部框
+# 頂部框（Base64 logo；標題同一行）
 # ----------------------------
 logo_b64 = get_base64_of_file(LOGO)
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
@@ -119,17 +123,19 @@ st.subheader("用 AI 先看見，再決定")
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
 # ============================================================
-# Tab1: 遺產稅快速估算
+# Tab1: 遺產稅快速估算（含基本免稅 1333 萬、喪葬費 138 萬）
 # ============================================================
 with tab1:
-    st.caption("輸入資產（萬）與家庭狀況，系統依民法第1138條推算法定繼承人，並計算扣除額與遺產稅。")
+    st.caption("輸入資產（萬）與家庭狀況，依民法第1138條推算法定繼承人，並計算扣除額與遺產稅（示意用途）。")
 
+    # 1) 資產以「萬」為單位
     total_wan = st.number_input("總資產（萬）", min_value=0, step=100, value=30000)
-    estate = total_wan * 10_000
+    estate = total_wan * 10_000  # 轉為 TWD
 
     st.divider()
     st.markdown("### 請輸入家庭成員")
 
+    # 2) 家庭狀況（扣除額需要的欄位）
     col1, col2, col3 = st.columns([1,1,1])
     with col1:
         has_spouse = st.checkbox("是否有配偶（扣除額 553 萬）", value=False)
@@ -138,24 +144,26 @@ with tab1:
     with col3:
         parents_count = st.number_input("父母人數（每人 138 萬，最多 2 人）", min_value=0, max_value=2, step=1, value=0)
 
+    # 3) 只為順位判斷（無扣除額）
     col4, col5 = st.columns([1,1])
     with col4:
-        has_siblings = st.checkbox("是否有兄弟姊妹（無扣除額）", value=False)
+        has_siblings = st.checkbox("是否有兄弟姊姊（無扣除額）", value=False)
     with col5:
         has_grandparents = st.checkbox("祖父母是否健在（無扣除額）", value=False)
 
-    # ✅ 扣除額：含基本免稅額 1333 萬
+    # 4) 扣除額（含基本免稅 1333 萬 + 喪葬費 138 萬；單位萬 → 轉 TWD）
     BASE_EXEMPTION_WAN = 1333
-    deduction_wan = BASE_EXEMPTION_WAN
+    FUNERAL_EXPENSE_WAN = 138
+    deduction_wan = BASE_EXEMPTION_WAN + FUNERAL_EXPENSE_WAN
     if has_spouse:
         deduction_wan += 553
     if children_count > 0:
         deduction_wan += children_count * 56
     if parents_count > 0:
         deduction_wan += min(parents_count, 2) * 138
-    deductions = deduction_wan * 10_000
+    deductions = deduction_wan * 10_000  # 轉 TWD
 
-    # 法定繼承人
+    # 5) 法定繼承人（民法1138 簡化）
     heirs = []
     if children_count > 0:
         heirs = ["子女"]
@@ -165,28 +173,79 @@ with tab1:
         heirs = ["兄弟姊妹"]
     elif has_grandparents:
         heirs = ["祖父母"]
+    else:
+        heirs = []
     if has_spouse:
         heirs = ["配偶"] + heirs
 
     heirs_str = "、".join(heirs) if heirs else "（無繼承人 → 遺產歸國庫）"
 
     st.info(f"👉 法定繼承人（民法1138條示意）：{heirs_str}")
-    st.success(f"👉 扣除額合計（含基本免稅額 1,333 萬）：約 NT$ {deductions:,.0f}")
+    st.success(f"👉 扣除額合計：約 NT$ {deductions:,.0f}")
 
-    # 稅額試算
+    # ▾ 扣除額明細（預設縮合）
+    with st.expander("查看扣除額明細", expanded=False):
+        st.write(f"- 基本免稅額：1,333 萬")
+        st.write(f"- 喪葬費用：138 萬")
+        if has_spouse:
+            st.write(f"- 配偶扣除額：553 萬")
+        if children_count > 0:
+            st.write(f"- 子女扣除額：{children_count} × 56 萬 = {children_count * 56} 萬")
+        if parents_count > 0:
+            st.write(f"- 父母扣除額：{parents_count} × 138 萬 = {min(parents_count,2) * 138} 萬")
+
+    # 6) 應繼分（按你指定規則）
+    shares = {}
+    if heirs:
+        if "子女" in heirs:
+            # 配偶與子女均分
+            total_persons = children_count + (1 if has_spouse else 0)
+            if total_persons > 0:
+                if has_spouse:
+                    shares["配偶"] = 1 / total_persons
+                if children_count > 0:
+                    shares["子女（合計）"] = (total_persons - (1 if has_spouse else 0)) / total_persons
+        elif "父母" in heirs:
+            if has_spouse:
+                shares["配偶"] = 0.5
+                shares["父母（合計）"] = 0.5
+            else:
+                shares["父母（合計）"] = 1.0
+        elif "兄弟姊妹" in heirs:
+            if has_spouse:
+                shares["配偶"] = 0.5
+                shares["兄弟姊妹（合計）"] = 0.5
+            else:
+                shares["兄弟姊妹（合計）"] = 1.0
+        elif "祖父母" in heirs:
+            if has_spouse:
+                shares["配偶"] = 2/3
+                shares["祖父母（合計）"] = 1/3
+            else:
+                shares["祖父母（合計）"] = 1.0
+
+    if shares:
+        st.markdown("### 應繼分（比例示意）")
+        for k, v in shares.items():
+            st.write(f"- {k}：{v:.2%}")
+
+    # 7) 稅額試算（保留原級距）
     taxable = max(estate - deductions, 0)
     if taxable <= 50_000_000:
         tax = taxable * 0.10
     elif taxable <= 100_000_000:
         tax = 5_000_000 + (taxable - 50_000_000) * 0.15
     else:
+        tax = 12,500,000 + (taxable - 100_000_000) * 0.20  # 注意逗號寫法
+    # 修正上行：Python 不能用千分位逗號在數字字面量
+    if taxable > 100_000_000:
         tax = 12_500_000 + (taxable - 100_000_000) * 0.20
 
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
-# Tab2: 傳承快照 PDF
+# Tab2: 傳承快照 PDF（快選字在輸入框上方）
 # ============================================================
 with tab2:
     st.caption("快速點選＋輸入，生成傳承快照 PDF（供內部討論用）")
@@ -198,15 +257,14 @@ with tab2:
     concerns_selected = st.multiselect("傳承顧慮（可點選快速加入）", concerns_options, default=[])
 
     with st.form("legacy_form"):
-        who = st.text_input("想優先照顧的人")
-        assets = st.text_area("主要資產", value="\n".join(assets_selected), height=120)
-        concerns = st.text_area("傳承顧慮", value="\n".join(concerns_selected), height=120)
+        who = st.text_input("想優先照顧的人（例如：太太／兒女／長輩）")
+        assets = st.text_area("主要資產（可自行補充）", value="\n".join(assets_selected), height=120)
+        concerns = st.text_area("傳承顧慮（可自行補充）", value="\n".join(concerns_selected), height=120)
         submitted = st.form_submit_button("生成傳承快照 PDF")
 
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
-        w, h = A4
 
         def line(text, size=12, gap=18, bold=False):
             font = FONT_NAME if FONT.exists() else ("Helvetica-Bold" if bold else "Helvetica")
@@ -216,40 +274,45 @@ with tab2:
                 c.drawString(60, y, seg)
                 y -= gap
             line.y = y
+        w, h = A4
         line.y = h - 72
 
         c.setTitle("永傳｜傳承快照")
         line("永傳影響力傳承平台｜傳承快照", 16, 24, bold=True)
         line(f"日期：{datetime.now().strftime('%Y-%m-%d %H:%M')}", 11, 16)
-        line("想優先照顧的人：", 12, 18, bold=True); line(who or "（未填）", 12, 18)
+        line.y -= 8
+        line("想優先照顧的人：", 12, 18, bold=True); line(who or "（尚未填寫）", 12, 18)
+        line.y -= 6
         line("主要資產：", 12, 18, bold=True)
-        for row in (assets or "（未填）").split("\n"):
+        for row in (assets or "（尚未填寫）").split("\n"):
             line(f"• {row}", 11, 16)
+        line.y -= 6
         line("傳承顧慮：", 12, 18, bold=True)
-        for row in (concerns or "（未填）").split("\n"):
+        for row in (concerns or "（尚未填寫）").split("\n"):
             line(f"• {row}", 11, 16)
 
         c.showPage(); c.save()
         st.download_button("下載 PDF", data=buf.getvalue(),
                            file_name="永傳_傳承快照.pdf", mime="application/pdf")
+        st.success("已生成 PDF，可作為與導師討論的起點。")
 
 # ============================================================
-# Tab3: 預約顧問
+# Tab3: 預約顧問（同風格快選）
 # ============================================================
 with tab3:
-    st.caption("體驗後，若想深入討論可預約顧問")
+    st.caption("7 分鐘工具體驗後，預約深入討論更有感")
 
     needs_options = ["稅負規劃", "現金流安排", "保單傳承", "跨境資產", "企業接班"]
-    needs_selected = st.multiselect("常見需求（可快速選擇）", needs_options, default=[])
+    needs_selected = st.multiselect("常見需求（可點選快速加入）", needs_options, default=[])
 
     with st.form("booking_form"):
         name = st.text_input("您的稱呼")
         email = st.text_input("Email")
         phone = st.text_input("聯絡電話")
-        note = st.text_area("想優先解決的問題", value="\n".join(needs_selected), height=120)
+        note = st.text_area("想優先解決的問題（可自行補充）", value="\n".join(needs_selected), height=120)
         ok = st.form_submit_button("送出預約需求")
     if ok:
-        st.success("我們已收到您的需求，將於工作日內與您聯繫。")
+        st.success("我們已收到您的預約需求。工作日內會與您聯繫，安排 20–30 分鐘初談。")
 
 # ----------------------------
 # Footer
@@ -266,6 +329,6 @@ with right:
 **聯絡**
 - 官網：gracefo.com  
 - 信箱：123@gracefo.com  
-- LINE／QR：請置入圖片
+- LINE／QR：請置入圖片（images/line_qr.png）
 """)
 st.caption(f"© {datetime.now().year} 《影響力》傳承策略平台｜永傳家族辦公室")
