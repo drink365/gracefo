@@ -29,22 +29,36 @@ st.set_page_config(
     layout="wide",
 )
 
-# === CSS ===
+# === 全域 CSS（Tabs / Metrics / Buttons / Tag-like multiselect） ===
 st.markdown("""
 <style>
-/* 亮點數字 */
+/* Tabs 樣式（選中有底色） */
+div[data-baseweb="tab-list"] { gap: 4px; }
+div[data-baseweb="tab"] {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 8px 8px 0 0;
+    color: #1e293b;
+    font-weight: 600;
+}
+div[data-baseweb="tab"][aria-selected="true"] {
+    background: #2563eb !important;
+    color: white !important;
+}
+
+/* 亮點數字與標籤 */
 div[data-testid="stMetricValue"] {
     font-size: 20px !important;
     font-weight: 700 !important;
     color: #1e40af !important;
 }
-/* 亮點標籤 */
 div[data-testid="stMetricLabel"] {
     font-size: 18px !important;
     font-weight: 700 !important;
     color: #1e293b !important;
 }
-/* 按鈕樣式 */
+
+/* 主要按鈕底色 */
 div.stButton > button:first-child,
 div.stDownloadButton > button {
     background-color: #2563eb;
@@ -58,6 +72,11 @@ div.stDownloadButton > button:hover {
     background-color: #1d4ed8;
     color: white;
 }
+
+/* multiselect 更像低調的 tag 區（不搶視覺） */
+div[data-baseweb="select"] > div { 
+    border-radius: 8px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -67,9 +86,11 @@ if FONT.exists():
     try:
         pdfmetrics.registerFont(TTFont(FONT_NAME, str(FONT)))
     except Exception:
-        st.sidebar.warning("⚠️ 無法載入字型")
+        st.sidebar.warning("⚠️ 無法載入字型（PDF 仍可生成，但可能無法顯示繁體中文）")
+else:
+    st.sidebar.info("提示：放入 NotoSansTC-Regular.ttf 以在 PDF 正確顯示繁體中文。")
 
-# === 頂部框 ===
+# === 頂部框（中央 logo 以 Base64 嵌入；標題同一行顯示） ===
 logo_b64 = get_base64_of_file(LOGO)
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:42px"/>' if logo_b64 else ""
 
@@ -110,40 +131,51 @@ st.subheader("用 AI 先看見，再決定")
 # === Tabs ===
 tab1, tab2, tab3 = st.tabs(["遺產稅｜快速估算", "傳承地圖｜需求快照（PDF）", "預約顧問｜一對一諮詢"])
 
-# === Tab1: 遺產稅快速估算 ===
+# ----------------------------
+# Tab1: 遺產稅快速估算（家庭狀況更精準）
+# ----------------------------
 with tab1:
-    st.caption("輸入大致資產，系統自動計算稅額，並根據家庭狀況顯示扣除額。")
+    st.caption("輸入大致資產並依家庭狀況計算扣除額與預估稅額（示意用途，實務請由專業人員確認）")
 
-    col1, col2 = st.columns(2)
+    estate = st.number_input("估算總資產（TWD）", min_value=0, step=1_000_000, value=120_000_000)
+
+    col1, col2, col3 = st.columns(3)
     with col1:
-        estate = st.number_input("估算總資產（TWD）", min_value=0, step=1_000_000, value=120_000_000)
+        has_spouse = st.radio("有無配偶", ["有", "無"], index=0, horizontal=True)
     with col2:
-        family_type = st.selectbox(
-            "請選擇家庭狀況",
-            ["未婚無子女", "已婚有配偶無子女", "已婚有配偶與子女", "有父母健在", "單身有子女"]
-        )
+        children = st.number_input("子女人數", min_value=0, value=0, step=1)
+    with col3:
+        has_parents = st.radio("父母健在", ["是", "否"], index=1, horizontal=True)
 
-    heirs = ""
-    deductions = 12_000_000  # 基本免稅額
-    if family_type == "未婚無子女":
-        heirs = "父母、兄弟姊妹"
-        deductions += 4_000_000
-    elif family_type == "已婚有配偶無子女":
-        heirs = "配偶、父母"
-        deductions += 4_000_000 + 4_000_000
-    elif family_type == "已婚有配偶與子女":
-        heirs = "配偶、子女"
-        deductions += 4_000_000 + 2_000_000 * 2
-    elif family_type == "有父母健在":
-        heirs = "父母"
-        deductions += 4_000_000
-    elif family_type == "單身有子女":
-        heirs = "子女"
-        deductions += 2_000_000 * 2
+    # 扣除額（簡化示意）：基本免稅額 + 配偶扣除 + 子女扣除 + 父母扣除
+    deductions = 12_000_000  # 基本免稅額（示意）
+    if has_spouse == "有":
+        deductions += 4_000_000            # 配偶扣除（示意）
+    if children > 0:
+        deductions += children * 2_000_000 # 每名子女（示意）
+    if has_parents == "是":
+        deductions += 4_000_000            # 父母扣除（示意）
 
-    st.info(f"👉 法定繼承人：{heirs}")
-    st.success(f"👉 可適用扣除額：約 NT$ {deductions:,.0f}")
+    # 法定繼承人（民法無遺囑時之簡化邏輯）
+    heirs = []
+    if children > 0:
+        heirs.append("子女")
+        if has_spouse == "有":
+            heirs.insert(0, "配偶")
+    elif has_parents == "是":
+        heirs.append("父母")
+        if has_spouse == "有":
+            heirs.insert(0, "配偶")
+    else:
+        heirs.append("兄弟姊妹")
+        if has_spouse == "有":
+            heirs.insert(0, "配偶")
+    heirs_str = "、".join(heirs)
 
+    st.info(f"👉 法定繼承人（簡化示意）：{heirs_str}")
+    st.success(f"👉 估計可適用扣除額：約 NT$ {deductions:,.0f}")
+
+    # 稅額（示意級距）
     taxable = max(estate - deductions, 0)
     if taxable <= 50_000_000:
         tax = taxable * 0.10
@@ -153,38 +185,30 @@ with tab1:
         tax = 12_500_000 + (taxable - 100_000_000) * 0.20
 
     st.success(f"預估遺產稅額：約 NT$ {tax:,.0f}")
+    st.caption("＊本工具為教育示意，實務仍須依個案詳算與法規更新調整。")
 
-# === Tab2: 傳承快照 PDF ===
+# ----------------------------
+# Tab2: 傳承快照 PDF（快選字在輸入框正上方，低調不搶視覺）
+# ----------------------------
 with tab2:
-    st.caption("快速輸入／點選，生成傳承快照 PDF")
+    st.caption("快速點選＋輸入，生成傳承快照 PDF（供內部討論用）")
 
-    # --- 快速詞彙：主要資產 ---
-    st.caption("常見的主要資產（可點選快速加入）")
-    suggested_assets = ["公司股權", "不動產", "金融資產", "保單", "海外資產", "其他"]
-    if "assets_text" not in st.session_state:
-        st.session_state.assets_text = ""
+    # 快選：主要資產（輸入框正上方）
+    assets_options = ["公司股權", "不動產", "金融資產", "保單", "海外資產", "其他"]
+    assets_selected = st.multiselect("主要資產（可點選快速加入）", assets_options, default=[], placeholder="選擇一到多項…")
 
-    cols = st.columns(len(suggested_assets))
-    for i, word in enumerate(suggested_assets):
-        if cols[i].button(word, key=f"asset_{i}"):
-            st.session_state.assets_text += ("" if st.session_state.assets_text == "" else "\n") + word
+    # 快選：傳承顧慮（輸入框正上方）
+    concerns_options = ["稅負過高", "婚前財產隔離", "企業接班", "現金流不足", "遺囑設計", "信託安排"]
+    concerns_selected = st.multiselect("傳承顧慮（可點選快速加入）", concerns_options, default=[], placeholder="選擇一到多項…")
 
-    # --- 快速詞彙：傳承顧慮 ---
-    st.caption("常見的傳承顧慮（可點選快速加入）")
-    suggested_concerns = ["稅負過高", "婚前財產隔離", "企業接班", "現金流不足", "遺囑設計", "信託安排"]
-    if "concerns_text" not in st.session_state:
-        st.session_state.concerns_text = ""
-
-    cols = st.columns(len(suggested_concerns))
-    for i, word in enumerate(suggested_concerns):
-        if cols[i].button(word, key=f"concern_{i}"):
-            st.session_state.concerns_text += ("" if st.session_state.concerns_text == "" else "\n") + word
-
-    # --- 表單 ---
+    # 表單
     with st.form("legacy_form"):
         who = st.text_input("想優先照顧的人（例如：太太／兒女／長輩）")
-        assets = st.text_area("主要資產", value=st.session_state.assets_text)
-        concerns = st.text_area("傳承顧慮", value=st.session_state.concerns_text)
+        # 將快選合併成預填內容，使用者仍可任意加字/改行
+        assets_text = "\n".join(assets_selected)
+        concerns_text = "\n".join(concerns_selected)
+        assets = st.text_area("主要資產（可自行補充）", value=assets_text, height=120)
+        concerns = st.text_area("傳承顧慮（可自行補充）", value=concerns_text, height=120)
         submitted = st.form_submit_button("生成傳承快照 PDF")
 
     if submitted:
@@ -218,29 +242,44 @@ with tab2:
 
         c.showPage(); c.save()
 
-        st.download_button("下載 PDF", data=buf.getvalue(), file_name="永傳_傳承快照.pdf", mime="application/pdf")
+        st.download_button("下載 PDF", data=buf.getvalue(),
+                           file_name="永傳_傳承快照.pdf", mime="application/pdf")
         st.success("已生成 PDF，可作為與導師討論的起點。")
 
-# === Tab3: 預約 ===
+# ----------------------------
+# Tab3: 預約顧問（一樣把快選字放在輸入框上方＋同風格）
+# ----------------------------
 with tab3:
     st.caption("7 分鐘工具體驗後，預約深入討論更有感")
 
-    # --- 快速詞彙：需求 ---
-    st.caption("常見需求（可點選快速加入）")
-    suggested_needs = ["稅負規劃", "現金流安排", "保單傳承", "跨境資產", "企業接班"]
-    if "needs_text" not in st.session_state:
-        st.session_state.needs_text = ""
-
-    cols = st.columns(len(suggested_needs))
-    for i, word in enumerate(suggested_needs):
-        if cols[i].button(word, key=f"need_{i}"):
-            st.session_state.needs_text += ("" if st.session_state.needs_text == "" else "\n") + word
+    needs_options = ["稅負規劃", "現金流安排", "保單傳承", "跨境資產", "企業接班"]
+    needs_selected = st.multiselect("常見需求（可點選快速加入）", needs_options, default=[], placeholder="選擇一到多項…")
 
     with st.form("booking_form"):
         name = st.text_input("您的稱呼")
         email = st.text_input("Email")
         phone = st.text_input("聯絡電話")
-        note = st.text_area("想優先解決的問題", value=st.session_state.needs_text)
+        note_prefill = "\n".join(needs_selected)
+        note = st.text_area("想優先解決的問題（可自行補充）", value=note_prefill, height=120)
         ok = st.form_submit_button("送出預約需求")
     if ok:
-        st.success("我們已收到您的預約需求。")
+        st.success("我們已收到您的預約需求。工作日內會與您聯繫，安排 20–30 分鐘初談。")
+
+# ----------------------------
+# Footer
+# ----------------------------
+st.write("---")
+left, right = st.columns([2,1])
+with left:
+    st.markdown("""
+**永傳家族傳承導師**  
+傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。
+""")
+with right:
+    st.markdown("""
+**聯絡**
+- 官網：gracefo.com  
+- 信箱：123@gracefo.com  
+- LINE／QR：請置入圖片（images/line_qr.png）
+""")
+st.caption(f"© {datetime.now().year} 《影響力》傳承策略平台｜永傳家族辦公室")
