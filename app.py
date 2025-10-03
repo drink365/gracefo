@@ -10,7 +10,7 @@ from pathlib import Path
 import base64
 
 # ----------------------------
-# 檔案與字型
+# 檔案與字型路徑
 # ----------------------------
 LOGO = Path("logo.png")
 FAVICON = Path("logo2.png")
@@ -40,22 +40,21 @@ st.markdown("""
 <style>
 /* Tabs：未選／已選 */
 button[role="tab"]{
-    background:#f1f5f9; color:#1e293b; font-weight:600;
-    padding:6px 12px; border-radius:8px 8px 0 0; margin-right:4px;
-    border:0;
+  background:#f1f5f9; color:#1e293b; font-weight:600;
+  padding:6px 12px; border-radius:8px 8px 0 0; margin-right:4px; border:0;
 }
 button[role="tab"][aria-selected="true"]{
-    background:#2563eb !important; color:#fff !important;
+  background:#2563eb !important; color:#fff !important;
 }
 /* Metrics */
 div[data-testid="stMetricValue"]{font-size:20px !important; font-weight:700 !important; color:#1e40af !important;}
 div[data-testid="stMetricLabel"]{font-size:18px !important; font-weight:700 !important; color:#1e293b !important;}
 /* Buttons */
 div.stButton > button:first-child, div.stDownloadButton > button{
-    background:#2563eb; color:#fff; border-radius:8px; padding:.5em 1em; font-weight:600;
+  background:#2563eb; color:#fff; border-radius:8px; padding:.5em 1em; font-weight:600;
 }
 div.stButton > button:first-child:hover, div.stDownloadButton > button:hover{
-    background:#1d4ed8; color:#fff;
+  background:#1d4ed8; color:#fff;
 }
 /* Select */
 div[data-baseweb="select"] > div{ border-radius:8px; }
@@ -89,13 +88,15 @@ st.markdown(
         {logo_html}
         <span style="display:inline-block;padding:6px 10px;border-radius:999px;
                      background:#4f46e5;color:#fff;font-size:12px">
-            永傳家族傳承導師
+          永傳家族傳承導師
         </span>
       </div>
       <h2 style="margin:12px 0 8px 0;font-size:22px;line-height:1.3;color:#1e3a8a;font-weight:700">
         AI × 財稅 × 傳承：您的「數位家族辦公室」入口
       </h2>
-      <p style="color:#475569;margin:0;font-size:14px">以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。</p>
+      <p style="color:#475569;margin:0;font-size:14px">
+        以顧問式陪伴，結合 AI 工具，快速看見稅務風險、傳承缺口與現金流安排。
+      </p>
     </div>
     <br/>
     """,
@@ -273,7 +274,7 @@ with tab1:
     st.caption("＊示意計算，請依最新法規與個案確認。")
 
 # ============================================================
-# Tab2: 傳承快照 PDF（快選字在輸入框上方 + PDF 加 logo 與品牌文案）
+# Tab2: 傳承快照 PDF（加 logo；結尾暖心文案；版權）
 # ============================================================
 with tab2:
     st.caption("快速點選＋輸入，生成傳承快照 PDF（供內部討論用）")
@@ -293,80 +294,75 @@ with tab2:
     if submitted:
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=A4)
-        w, h = A4  # (595.27, 841.89) points，1 inch = 72 pt
 
-        # ===== 頁首：logo + 品牌標題與標語 =====
-        top_margin = h - 60
-        x_padding = 60
+        w, h = A4  # 595x842 pt
+        x_pad, y_top, y_footer = 60, h - 60, 36
 
-        # 畫 logo（若存在）
+        # ====== 頁首：Logo（左上）======
+        text_y = y_top
         if LOGO.exists():
             try:
-                logo_img = ImageReader(str(LOGO))
-                # 高度 28 pt，等比縮放
-                logo_h = 28
-                # 估計寬高比，讓 reportlab 自行按高度縮放
-                c.drawImage(logo_img, x_padding, top_margin - logo_h, height=logo_h, preserveAspectRatio=True, mask='auto')
-                text_start_y = top_margin - logo_h - 8
+                with open(str(LOGO), "rb") as f:
+                    logo_img = ImageReader(f)
+                    logo_h = 40  # 顯眼些
+                    c.drawImage(
+                        logo_img, x_pad, y_top - logo_h,
+                        height=logo_h, preserveAspectRatio=True, mask="auto"
+                    )
+                    text_y = y_top - logo_h - 10
             except Exception:
-                text_start_y = top_margin
-        else:
-            text_start_y = top_margin
+                text_y = y_top
 
-        # 字型選擇
+        # ====== 文字工具 ======
         TITLE_FONT = FONT_NAME if FONT.exists() else "Helvetica-Bold"
-        BODY_FONT = FONT_NAME if FONT.exists() else "Helvetica"
+        BODY_FONT  = FONT_NAME if FONT.exists() else "Helvetica"
 
-        # 標題與標語
-        c.setFont(TITLE_FONT, 14)
-        c.drawString(x_padding, text_start_y, "永傳家族傳承導師")
-        text_start_y -= 18
-        c.setFont(BODY_FONT, 11)
-        c.drawString(x_padding, text_start_y, "傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。")
-        text_start_y -= 14
-
-        # 內文起始游標（給 line() 用）
         def line(text, size=12, gap=18, bold=False):
-            font = TITLE_FONT if (bold and FONT.exists()) else (FONT_NAME if FONT.exists() else ("Helvetica-Bold" if bold else "Helvetica"))
-            # 若無中文字型，粗體退回 Helvetica-Bold
-            if not FONT.exists():
-                font = "Helvetica-Bold" if bold else "Helvetica"
+            font = TITLE_FONT if bold else BODY_FONT
             c.setFont(font, size)
             y = line.y
-            for seg in text.split("\n"):
-                c.drawString(x_padding, y, seg)
+            for seg in (text or "").split("\n"):
+                c.drawString(x_pad, y, seg)
                 y -= gap
             line.y = y
+        line.y = text_y
 
-        line.y = text_start_y - 6
-
-        # ===== 內容區 =====
+        # ====== 內容區 ======
         c.setTitle("永傳｜傳承快照")
         line("永傳影響力傳承平台｜傳承快照", 16, 24, bold=True)
-        line(f"日期：{datetime.now().strftime('%Y-%m-%d %H:%M')}", 11, 16)
-        line.y -= 8
+        line(f"日期：{datetime.now().strftime('%Y-%m-%d %H:%M')}", 11, 18)
+        line.y -= 6
         line("想優先照顧的人：", 12, 18, bold=True); line(who or "（尚未填寫）", 12, 18)
         line.y -= 6
         line("主要資產：", 12, 18, bold=True)
         for row in (assets or "（尚未填寫）").split("\n"):
-            if row.strip():
-                line(f"• {row.strip()}", 11, 16)
+            row = row.strip()
+            if row:
+                line(f"• {row}", 11, 16)
         line.y -= 6
         line("傳承顧慮：", 12, 18, bold=True)
         for row in (concerns or "（尚未填寫）").split("\n"):
-            if row.strip():
-                line(f"• {row.strip()}", 11, 16)
+            row = row.strip()
+            if row:
+                line(f"• {row}", 11, 16)
 
-        # ===== 頁尾品牌訊息 =====
-        footer_text = "© 2025 《影響力》傳承策略平台｜永傳家族辦公室"
+        # ====== 暖心收尾（最下方、版權上方）======
+        closing_y = 72  # 版權字上方留白
+        c.setFont(BODY_FONT, 11)
+        c.drawString(x_pad, closing_y + 24, "永傳家族傳承導師")
         c.setFont(BODY_FONT, 10)
-        c.drawRightString(w - x_padding, 36, footer_text)
+        c.drawString(x_pad, closing_y + 8, "傳承，不只是資產的安排，更是讓關心的人，在需要時真的被照顧到。")
 
-        c.showPage(); c.save()
+        # ====== 版權（最底）======
+        c.setFont(BODY_FONT, 10)
+        c.drawRightString(w - x_pad, y_footer, "© 2025 《影響力》傳承策略平台｜永傳家族辦公室")
+
+        c.showPage()
+        c.save()
 
         st.download_button("下載 PDF", data=buf.getvalue(),
                            file_name="永傳_傳承快照.pdf", mime="application/pdf")
-        st.success("已生成 PDF（含 logo 與品牌文案），可作為與導師討論的起點。")
+        st.success("已生成 PDF（含 Logo 與暖心收尾文字）。")
 
 # ============================================================
 # Tab3: 預約顧問（同風格快選）
