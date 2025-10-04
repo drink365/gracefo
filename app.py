@@ -1,42 +1,110 @@
 import streamlit as st
-# Anchor for CTA jump
-st.markdown('<a id="booking"></a>', unsafe_allow_html=True)
-# ---- Topbar (welcome + CTA) ----
-_user_name = "Grace"
-_user_expiry = "2026-12-31"
-st.markdown(f"""
-<div class="topbar">
-  <div class="left">👋 歡迎回來，<b>{_user_name}</b>（到期日：{_user_expiry}）</div>
-  <div class="right">
-    <a href="#booking">預約 30 分鐘傳承健檢</a>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-# ---- Global brand style & cleanup ----
-st.markdown("""
-<style>
-/* Hide Sidebar & its toggle */
-[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] {
-  display: none !important;
-}
-/* Hide default header buttons */
-.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"] {
-  display: none !important;
-}
-:root {
-  --brand:#145DA0; --accent:#2E8BC0; --gold:#F9A826; --bg:#F7FAFC; --ink:#1A202C;
-}
-html, body, .stApp { background: var(--bg); color: var(--ink); }
-.topbar {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 16px; margin-bottom:8px; border-bottom:1px solid #E2E8F0; background:#fff; border-radius:12px;
-}
-.topbar .right a { margin-left:8px; text-decoration:none; padding:10px 16px; border-radius:999px; background:var(--brand); color:#fff; }
-.topbar .right a:hover { background:#0F4D88; }
-.section-card { background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:20px; }
-.footer { color:#4A5568; font-size:14px; margin-top:40px; }
-</style>
-""", unsafe_allow_html=True)
+
+# ==== Booking: Email (admin + auto-reply) + Google Sheets logging ====
+import smtplib, csv, json
+from email.message import EmailMessage
+from datetime import datetime
+
+def _smtp_cfg_ok():
+    smtp_cfg = st.secrets.get("smtp", {})
+    book_cfg = st.secrets.get("booking", {})
+    return bool(smtp_cfg.get("host") and smtp_cfg.get("username") and smtp_cfg.get("password") and book_cfg.get("to"))
+
+def _send_email(subject: str, body: str, to_addr: str, cc_addr: str = "", from_addr: str | None = None) -> tuple[bool, str]:
+    try:
+        smtp_cfg = st.secrets.get("smtp", {})
+        host = smtp_cfg.get("host"); port = int(smtp_cfg.get("port", 587))
+        username = smtp_cfg.get("username"); password = smtp_cfg.get("password")
+        use_tls = bool(smtp_cfg.get("use_tls", True))
+        sender = from_addr or username
+
+        em = EmailMessage()
+        em["Subject"] = subject
+        em["From"] = sender
+        em["To"] = to_addr
+        if cc_addr:
+            em["Cc"] = cc_addr
+        em.set_content(body)
+
+        with smtplib.SMTP(host, port, timeout=20) as smtp:
+            if use_tls:
+                smtp.starttls()
+            smtp.login(username, password)
+            smtp.send_message(em)
+
+        return True, f"已寄出到 {to_addr}{('；副本：' + cc_addr) if cc_addr else ''}"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
+
+def _notify_admin(name: str, phone: str, email: str, slot: str, msg: str) -> tuple[bool, str]:
+    book_cfg = st.secrets.get("booking", {})
+    to_addr = book_cfg.get("to", "")
+    cc_addr = book_cfg.get("cc", "")
+    subject = "📅 新預約：影響力傳承健檢"
+    body = f"""【新預約】
+姓名/稱呼：{name}
+手機：{phone}
+Email：{email or '-'}
+偏好時段：{slot}
+需求/備註：{msg}
+
+送出時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+"""
+    return _send_email(subject, body, to_addr, cc_addr)
+
+def _auto_reply(email: str, name: str) -> tuple[bool, str] | tuple[None, str]:
+    if not email:
+        return (None, "無信箱，略過自動回覆")
+    book_cfg = st.secrets.get("booking", {})
+    from_addr = book_cfg.get("auto_reply_from")  # 可選：若未設定則用 smtp.username
+    subject = "我們已收到您的預約｜永傳家族傳承導師"
+    body = f"""{name} 您好：
+
+我們已收到您的預約，顧問會盡快與您聯繫，安排 30 分鐘傳承健檢（線上或現場皆可）。
+
+若想提前提供資料或指定議題，歡迎直接回覆此信。
+期待與您聊聊，祝順心！
+
+— 《影響力》傳承策略平台｜永傳家族辦公室
+gracefo.com
+"""
+    return _send_email(subject, body, email, cc_addr="", from_addr=from_addr)
+
+def _append_booking_csv(name: str, phone: str, email: str, slot: str, msg: str, csv_path: str = "booking_backup.csv") -> None:
+    try:
+        exists = os.path.exists(csv_path)
+        with open(csv_path, "a", newline="", encoding="utf-8") as f:
+            import csv as _csv
+            w = _csv.writer(f)
+            if not exists:
+                w.writerow(["timestamp", "name", "phone", "email", "slot", "message"])
+            w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name, phone, email, slot, msg])
+    except Exception:
+        pass
+
+def _log_to_gsheets(name: str, phone: str, email: str, slot: str, msg: str) -> tuple[bool, str]:
+    try:
+        gs = st.secrets.get("gsheets", {})
+        import gspread
+        creds = gs.get("service_account")
+        if not creds:
+            return False, "未設定 gsheets.service_account"
+        sh_id = gs.get("spreadsheet_id"); ws_name = gs.get("worksheet_name", "booking")
+        if not sh_id:
+            return False, "未設定 gsheets.spreadsheet_id"
+
+        gc = gspread.service_account_from_dict(creds)
+        sh = gc.open_by_key(sh_id)
+        try:
+            ws = sh.worksheet(ws_name)
+        except Exception:
+            ws = sh.add_worksheet(title=ws_name, rows=1000, cols=10)
+            ws.append_row(["timestamp", "name", "phone", "email", "slot", "message"])
+        ws.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name, phone, email, slot, msg])
+        return True, "已寫入 Google Sheet"
+    except Exception as e:
+        return False, f"GS 錯誤：{e}"
+
 import base64
 
 # 設定頁面
@@ -127,14 +195,16 @@ st.markdown(
 )
 
 
-# ---- Booking form (Home only) ----
-st.subheader("預約 30 分鐘傳承健檢（免費）")
-with st.form("booking"):
-    col1, col2, col3 = st.columns([2,2,1])
-    name = col1.text_input("姓名/稱呼*")
-    phone = col2.text_input("手機*")
-    slot  = col3.selectbox("偏好時段", ["不限", "上午", "下午"])
-    msg   = st.text_area("想先了解什麼？（可選）", height=80, placeholder="例如：一代交棒、跨境資產、長輩照顧、保單策略…")
-    submitted = st.form_submit_button("送出預約")
-    if submitted:
-        st.success("已收到您的預約，我們將儘快與您聯繫。也歡迎加入 LINE 留下聯絡方式。")
+# ---- Admin-only tools: test email ----
+try:
+    if st.session_state.get("role") == "admin":
+        st.info("管理工具（僅 admin 可見）")
+        if st.button("發送測試郵件（到 booking.to）"):
+            if _smtp_cfg_ok():
+                ok, info = _send_email("TEST｜預約系統測試", "這是一封測試郵件。", st.secrets["booking"]["to"])
+                st.success("測試結果：" + ("成功" if ok else "失敗") + "｜" + info)
+            else:
+                st.warning("SMTP 或收件人設定不完整")
+except Exception:
+    pass
+

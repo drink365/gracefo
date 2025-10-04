@@ -1,42 +1,4 @@
 import streamlit as st
-# Anchor for CTA jump
-st.markdown('<a id="booking"></a>', unsafe_allow_html=True)
-# ---- Topbar (welcome + CTA) ----
-_user_name = "Grace"
-_user_expiry = "2026-12-31"
-st.markdown(f"""
-<div class="topbar">
-  <div class="left">👋 歡迎回來，<b>{_user_name}</b>（到期日：{_user_expiry}）</div>
-  <div class="right">
-    <a href="#booking">預約 30 分鐘傳承健檢</a>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-# ---- Global brand style & cleanup ----
-st.markdown("""
-<style>
-/* Hide Sidebar & its toggle */
-[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] {
-  display: none !important;
-}
-/* Hide default header buttons */
-.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"] {
-  display: none !important;
-}
-:root {
-  --brand:#145DA0; --accent:#2E8BC0; --gold:#F9A826; --bg:#F7FAFC; --ink:#1A202C;
-}
-html, body, .stApp { background: var(--bg); color: var(--ink); }
-.topbar {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 16px; margin-bottom:8px; border-bottom:1px solid #E2E8F0; background:#fff; border-radius:12px;
-}
-.topbar .right a { margin-left:8px; text-decoration:none; padding:10px 16px; border-radius:999px; background:var(--brand); color:#fff; }
-.topbar .right a:hover { background:#0F4D88; }
-.section-card { background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:20px; }
-.footer { color:#4A5568; font-size:14px; margin-top:40px; }
-</style>
-""", unsafe_allow_html=True)
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
 import pandas as pd
