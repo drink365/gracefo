@@ -1,23 +1,16 @@
 import streamlit as st
-# ---- Force-hide Sidebar & header buttons ----
-st.markdown("""
-<style>
-/* Sidebar & its toggle */
-[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
-/* Header default buttons (Deploy/Settings/Rerun) */
-.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
-/* Ensure main stretches wide */
-[data-testid="stAppViewContainer"] .main .block-container {
-  max-width: 1600px; padding-left: 24px; padding-right: 24px;
-}
-</style>
-""", unsafe_allow_html=True)
 from modules.tax_constants import TaxConstants
 from modules.tax_calculator import EstateTaxCalculator
 from modules.estate_tax_ui import render_estate_tax_ui
 from modules.cta_section import render_cta
 
 # 頁面設定
+st.set_page_config(
+    page_title="AI秒算遺產稅｜《影響力》傳承策略平台",
+    page_icon="🧮",
+    layout="wide"
+)
+
 # 標題與說明
 st.markdown("""
 <div style='text-align: center; margin-top: 1em;'>

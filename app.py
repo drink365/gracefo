@@ -1,27 +1,160 @@
-import streamlit as st
-# ---- Force-hide Sidebar & header buttons ----
+# ==== HOME: Hero + Values + Roles + Tools + Success + CTA ====
 st.markdown("""
 <style>
-/* Sidebar & its toggle */
-[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
-/* Header default buttons (Deploy/Settings/Rerun) */
-.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
-/* Ensure main stretches wide */
-[data-testid="stAppViewContainer"] .main .block-container {
-  max-width: 1600px; padding-left: 24px; padding-right: 24px;
+.hero {
+  padding: 56px 28px; border-radius: 20px;
+  background: linear-gradient(180deg, #EAF4FF 0%, #ffffff 100%);
+  border: 1px solid #E2E8F0; margin-bottom: 16px;
 }
+.hero h1 { font-size: 36px; line-height:1.25; margin:0 0 12px; color:#0F2E63; }
+.hero p { font-size: 18px; margin:0 0 20px; color:#2D3748; }
+.hero .note { font-size:13px; color:#4A5568; }
+.section-title { font-size: 22px; font-weight:700; margin: 24px 0 12px; color:#0F2E63; }
+.card { background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:20px; height:100%; }
+.card h3 { margin:0 0 8px; font-size:20px; }
+.card p { margin:0; color:#4A5568;}
+.cta { display:inline-block; background:#145DA0; color:#fff; padding:12px 20px; border-radius:999px; text-decoration:none; }
+.cta:hover { background:#0F4D88; }
+.tool-link { text-decoration:none; }
+.badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#EDF2F7; color:#2D3748; margin-left:8px;}
 </style>
 """, unsafe_allow_html=True)
-# --- Page config: apply favicon.png if available (must be first Streamlit call) ---
-from pathlib import Path as _Path
-_fav = _Path(__file__).parent / "favicon.png"
-if _fav.exists():
-    st.set_page_config(page_title="永傳家族傳承導師｜影響力傳承平台", page_icon=str(_fav), layout="wide")
-else:
-    st.set_page_config(page_title="永傳家族傳承導師｜影響力傳承平台", page_icon="✨", layout="wide")
+
+# --- Hero ---
+st.markdown('''
+<div class="hero">
+  <h1>準備與從容，我的運動員人生哲學</h1>
+  <p>富足退休、富裕一生、富貴傳承——讓資產、責任與愛，在正確的時間，交到最對的人手上。</p>
+  <a class="cta" href="#booking">預約 30 分鐘傳承健檢</a>
+  <div class="note">線上或現場，皆可</div>
+</div>
+''' , unsafe_allow_html=True)
+
+# --- 三大價值 ---
+st.markdown('<div class="section-title">我們的三大價值</div>', unsafe_allow_html=True)
+v1, v2, v3 = st.columns(3)
+with v1:
+    st.markdown('<div class="card"><h3>專業</h3><p>跨境法稅 × 保單 × 信託整合，由美國 CPA 與實務團隊把關。</p></div>', unsafe_allow_html=True)
+with v2:
+    st.markdown('<div class="card"><h3>智能</h3><p>AI 傳承導師｜工具箱，將模糊問題變成可決策的選項。</p></div>', unsafe_allow_html=True)
+with v3:
+    st.markdown('<div class="card"><h3>永續</h3><p>為家業、家產、家風設計長期穩定現金流與治理機制。</p></div>', unsafe_allow_html=True)
+
+# --- 你是誰（角色導向） ---
+st.markdown('<div class="section-title">你是誰？我們怎麼幫你</div>', unsafe_allow_html=True)
+r1, r2 = st.columns(2)
+with r1:
+    st.markdown('''
+<div class="card">
+  <h3>創辦人一代<span class="badge">交棒設計</span></h3>
+  <p>稅負可預期、交棒有秩序、關鍵資產不外流。</p>
+  <p><a class="cta" href="#booking">談談您的情況</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with r2:
+    st.markdown('''
+<div class="card">
+  <h3>二代接班<span class="badge">治理升級</span></h3>
+  <p>權責清楚、分配公平、治理不失速。</p>
+  <p><a class="cta" href="#booking">預約顧問</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+r3, r4 = st.columns(2)
+with r3:
+    st.markdown('''
+<div class="card">
+  <h3>跨境資產<span class="badge">合規路徑</span></h3>
+  <p>稅務合規、文件齊備、傳承路徑清楚。</p>
+  <p><a class="cta" href="#booking">了解作法</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with r4:
+    st.markdown('''
+<div class="card">
+  <h3>長輩照顧<span class="badge">保障安排</span></h3>
+  <p>照護資金有安排、分期給付、避免爭產。</p>
+  <p><a class="cta" href="#booking">開始規劃</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+# --- 工具箱 ---
+st.markdown('<div class="section-title">工具箱（立即可用）</div>', unsafe_allow_html=True)
+g1, g2 = st.columns(2)
+with g1:
+    st.markdown('''
+<div class="card">
+  <h3>📦 保單策略規劃</h3>
+  <p>用 20% 的保費守護 100% 的資產。</p>
+  <p><a class="cta tool-link" href="/?tool=policy">立即試用</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with g2:
+    st.markdown('''
+<div class="card">
+  <h3>⚖️ 遺產稅秒算</h3>
+  <p>快速試算、看見差額，做出好決策。</p>
+  <p><a class="cta tool-link" href="/?tool=estate">立即試算</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+g3, g4 = st.columns(2)
+with g3:
+    st.markdown('''
+<div class="card">
+  <h3>🗺️ 傳承地圖</h3>
+  <p>資產六大類 × 風險雷達，一張圖看全局。</p>
+  <p><a class="cta tool-link" href="/?tool=map">開始製作</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with g4:
+    st.markdown('''
+<div class="card">
+  <h3>💬 顧問對話庫</h3>
+  <p>讓家族對話更順暢。</p>
+  <p><a class="cta tool-link" href="/?tool=dialog">看看範例</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+# --- 成功案例（結果導向） ---
+st.markdown('<div class="section-title">成功案例（結果導向）</div>', unsafe_allow_html=True)
+c1, c2 = st.columns(2)
+with c1:
+    st.markdown('''
+<div class="card">
+  <h3>90 歲長輩 5 億保額傳承</h3>
+  <p>壓縮贈與、指定第三代、婚前財產隔離。</p>
+  <p><a class="tool-link" href="#booking">閱讀重點 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with c2:
+    st.markdown('''
+<div class="card">
+  <h3>製造業二代交棒</h3>
+  <p>股權信託 + 保單現金流，兼顧治理與流動性。</p>
+  <p><a class="tool-link" href="#booking">閱讀重點 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+# --- 底部 CTA ---
+st.markdown('''
+<div class="section-card">
+  <h3>預約 30 分鐘傳承健檢（免費）</h3>
+  <p>已協助超過 <b>XXX</b> 位企業家完成跨境傳承規劃（勞動部／產投授課講師）。</p>
+  <a class="cta" href="#booking">立即預約</a>
+</div>
+''' , unsafe_allow_html=True)
+# ==== END HOME ====
+import streamlit as st
 import base64
 
 # 設定頁面
+st.set_page_config(
+    page_title="《影響力》 | 高資產家庭的傳承策略入口",
+    page_icon="🌿",
+    layout="centered"
+)
+
 # 讀取 logo
 def load_logo_base64(image_path):
     with open(image_path, "rb") as f:
@@ -101,22 +234,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-# ---- Optional Slack Webhook notify ----
-def _slack_notify(text: str) -> tuple[bool, str]:
-    try:
-        cfg = st.secrets.get("slack", {})
-        url = cfg.get("webhook")
-        if not url:
-            return False, "未設定 slack.webhook"
-        try:
-            import requests
-        except Exception:
-            return False, "缺少 requests 套件"
-        resp = requests.post(url, json={"text": text}, timeout=10)
-        if 200 <= resp.status_code < 300:
-            return True, "Slack OK"
-        return False, f"Slack {resp.status_code}: {resp.text[:200]}"
-    except Exception as e:
-        return False, f"Slack 錯誤：{e}"
