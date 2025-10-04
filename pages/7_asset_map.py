@@ -1,4 +1,17 @@
 import streamlit as st
+# ---- Force-hide Sidebar & header buttons ----
+st.markdown("""
+<style>
+/* Sidebar & its toggle */
+[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
+/* Header default buttons (Deploy/Settings/Rerun) */
+.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
+/* Ensure main stretches wide */
+[data-testid="stAppViewContainer"] .main .block-container {
+  max-width: 1600px; padding-left: 24px; padding-right: 24px;
+}
+</style>
+""", unsafe_allow_html=True)
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
 import pandas as pd

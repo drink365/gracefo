@@ -1,119 +1,27 @@
 import streamlit as st
-
-# ==== Booking: Email (admin + auto-reply) + Google Sheets logging ====
-import smtplib, csv, json
-from email.message import EmailMessage
-from datetime import datetime
-
-def _smtp_cfg_ok():
-    smtp_cfg = st.secrets.get("smtp", {})
-    book_cfg = st.secrets.get("booking", {})
-    return bool(smtp_cfg.get("host") and smtp_cfg.get("username") and smtp_cfg.get("password") and book_cfg.get("to"))
-
-def _send_email(subject: str, body: str, to_addr: str, cc_addr: str = "", from_addr: str | None = None) -> tuple[bool, str]:
-    try:
-        smtp_cfg = st.secrets.get("smtp", {})
-        host = smtp_cfg.get("host"); port = int(smtp_cfg.get("port", 587))
-        username = smtp_cfg.get("username"); password = smtp_cfg.get("password")
-        use_tls = bool(smtp_cfg.get("use_tls", True))
-        sender = from_addr or username
-
-        em = EmailMessage()
-        em["Subject"] = subject
-        em["From"] = sender
-        em["To"] = to_addr
-        if cc_addr:
-            em["Cc"] = cc_addr
-        em.set_content(body)
-
-        with smtplib.SMTP(host, port, timeout=20) as smtp:
-            if use_tls:
-                smtp.starttls()
-            smtp.login(username, password)
-            smtp.send_message(em)
-
-        return True, f"已寄出到 {to_addr}{('；副本：' + cc_addr) if cc_addr else ''}"
-    except Exception as e:
-        return False, f"{type(e).__name__}: {e}"
-
-def _notify_admin(name: str, phone: str, email: str, slot: str, msg: str) -> tuple[bool, str]:
-    book_cfg = st.secrets.get("booking", {})
-    to_addr = book_cfg.get("to", "")
-    cc_addr = book_cfg.get("cc", "")
-    subject = "📅 新預約：影響力傳承健檢"
-    body = f"""【新預約】
-姓名/稱呼：{name}
-手機：{phone}
-Email：{email or '-'}
-偏好時段：{slot}
-需求/備註：{msg}
-
-送出時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-"""
-    return _send_email(subject, body, to_addr, cc_addr)
-
-def _auto_reply(email: str, name: str) -> tuple[bool, str] | tuple[None, str]:
-    if not email:
-        return (None, "無信箱，略過自動回覆")
-    book_cfg = st.secrets.get("booking", {})
-    from_addr = book_cfg.get("auto_reply_from")  # 可選：若未設定則用 smtp.username
-    subject = "我們已收到您的預約｜永傳家族傳承導師"
-    body = f"""{name} 您好：
-
-我們已收到您的預約，顧問會盡快與您聯繫，安排 30 分鐘傳承健檢（線上或現場皆可）。
-
-若想提前提供資料或指定議題，歡迎直接回覆此信。
-期待與您聊聊，祝順心！
-
-— 《影響力》傳承策略平台｜永傳家族辦公室
-gracefo.com
-"""
-    return _send_email(subject, body, email, cc_addr="", from_addr=from_addr)
-
-def _append_booking_csv(name: str, phone: str, email: str, slot: str, msg: str, csv_path: str = "booking_backup.csv") -> None:
-    try:
-        exists = os.path.exists(csv_path)
-        with open(csv_path, "a", newline="", encoding="utf-8") as f:
-            import csv as _csv
-            w = _csv.writer(f)
-            if not exists:
-                w.writerow(["timestamp", "name", "phone", "email", "slot", "message"])
-            w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name, phone, email, slot, msg])
-    except Exception:
-        pass
-
-def _log_to_gsheets(name: str, phone: str, email: str, slot: str, msg: str) -> tuple[bool, str]:
-    try:
-        gs = st.secrets.get("gsheets", {})
-        import gspread
-        creds = gs.get("service_account")
-        if not creds:
-            return False, "未設定 gsheets.service_account"
-        sh_id = gs.get("spreadsheet_id"); ws_name = gs.get("worksheet_name", "booking")
-        if not sh_id:
-            return False, "未設定 gsheets.spreadsheet_id"
-
-        gc = gspread.service_account_from_dict(creds)
-        sh = gc.open_by_key(sh_id)
-        try:
-            ws = sh.worksheet(ws_name)
-        except Exception:
-            ws = sh.add_worksheet(title=ws_name, rows=1000, cols=10)
-            ws.append_row(["timestamp", "name", "phone", "email", "slot", "message"])
-        ws.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name, phone, email, slot, msg])
-        return True, "已寫入 Google Sheet"
-    except Exception as e:
-        return False, f"GS 錯誤：{e}"
-
+# ---- Force-hide Sidebar & header buttons ----
+st.markdown("""
+<style>
+/* Sidebar & its toggle */
+[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
+/* Header default buttons (Deploy/Settings/Rerun) */
+.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
+/* Ensure main stretches wide */
+[data-testid="stAppViewContainer"] .main .block-container {
+  max-width: 1600px; padding-left: 24px; padding-right: 24px;
+}
+</style>
+""", unsafe_allow_html=True)
+# --- Page config: apply favicon.png if available (must be first Streamlit call) ---
+from pathlib import Path as _Path
+_fav = _Path(__file__).parent / "favicon.png"
+if _fav.exists():
+    st.set_page_config(page_title="永傳家族傳承導師｜影響力傳承平台", page_icon=str(_fav), layout="wide")
+else:
+    st.set_page_config(page_title="永傳家族傳承導師｜影響力傳承平台", page_icon="✨", layout="wide")
 import base64
 
 # 設定頁面
-st.set_page_config(
-    page_title="《影響力》 | 高資產家庭的傳承策略入口",
-    page_icon="🌿",
-    layout="centered"
-)
-
 # 讀取 logo
 def load_logo_base64(image_path):
     with open(image_path, "rb") as f:
@@ -195,16 +103,20 @@ st.markdown(
 )
 
 
-# ---- Admin-only tools: test email ----
-try:
-    if st.session_state.get("role") == "admin":
-        st.info("管理工具（僅 admin 可見）")
-        if st.button("發送測試郵件（到 booking.to）"):
-            if _smtp_cfg_ok():
-                ok, info = _send_email("TEST｜預約系統測試", "這是一封測試郵件。", st.secrets["booking"]["to"])
-                st.success("測試結果：" + ("成功" if ok else "失敗") + "｜" + info)
-            else:
-                st.warning("SMTP 或收件人設定不完整")
-except Exception:
-    pass
-
+# ---- Optional Slack Webhook notify ----
+def _slack_notify(text: str) -> tuple[bool, str]:
+    try:
+        cfg = st.secrets.get("slack", {})
+        url = cfg.get("webhook")
+        if not url:
+            return False, "未設定 slack.webhook"
+        try:
+            import requests
+        except Exception:
+            return False, "缺少 requests 套件"
+        resp = requests.post(url, json={"text": text}, timeout=10)
+        if 200 <= resp.status_code < 300:
+            return True, "Slack OK"
+        return False, f"Slack {resp.status_code}: {resp.text[:200]}"
+    except Exception as e:
+        return False, f"Slack 錯誤：{e}"

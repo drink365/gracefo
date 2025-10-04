@@ -1,17 +1,24 @@
 # --- pages/8_insurance_strategy.py ---
 
 import streamlit as st
+# ---- Force-hide Sidebar & header buttons ----
+st.markdown("""
+<style>
+/* Sidebar & its toggle */
+[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
+/* Header default buttons (Deploy/Settings/Rerun) */
+.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
+/* Ensure main stretches wide */
+[data-testid="stAppViewContainer"] .main .block-container {
+  max-width: 1600px; padding-left: 24px; padding-right: 24px;
+}
+</style>
+""", unsafe_allow_html=True)
 from modules.insurance_logic import get_recommendations
 from modules.pdf_generator import generate_insurance_strategy_pdf
 from io import BytesIO
 
 # 頁面設定
-st.set_page_config(
-    page_title="《影響力》保單策略規劃",
-    page_icon="📦",
-    layout="centered"
-)
-
 # 標題區
 st.markdown("""
 <div style='text-align: center; margin-top: 1em;'>
