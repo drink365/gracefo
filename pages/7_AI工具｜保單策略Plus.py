@@ -2,7 +2,7 @@
 import streamlit as st
 from src.modules.insurance_planner_plus import render
 
-st.\1
+
 st.markdown("""
 <style>
 /* Hide and remove the sidebar completely */

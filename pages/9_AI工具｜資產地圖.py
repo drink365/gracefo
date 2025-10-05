@@ -2,7 +2,7 @@
 import streamlit as st
 from src.modules.asset_map import render
 
-st.\1
+
 st.markdown("""
 <style>
 /* Hide and remove the sidebar completely */

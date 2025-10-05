@@ -1,7 +1,7 @@
 
 import streamlit as st
 
-st.\1
+
 st.markdown("""
 <style>
 /* Hide and remove the sidebar completely */
