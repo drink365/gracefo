@@ -1,88 +1,81 @@
 
 import streamlit as st
+from ..services.tax import EstateTaxInput, calc_estate_tax_progressive, DEFAULT_BRACKETS
 
-# === 固定參數（依現行公告數值，NTD） ===
-EXEMPTION = 13_330_000      # 基本免稅額
-FUNERAL   = 1_380_000       # 喪葬費
-# 每人扣除額（標準模式，僅填人數即可）
-SPOUSE_DED = 5_530_000      # 配偶扣除額／每人
-CHILD_DED  = 560_000        # 子女／孫子女 扣除額／每人
-PARENT_DED = 1_380_000      # 父母 扣除額／每人
+def _fmt_twd(x: float) -> str:
+    return f"{x:,.0f} 元"
 
-# 累進級距（上限、稅率）
-# 0～56,210,000 → 10%；56,210,000～112,420,000 → 15%；>112,420,000 → 20%
-BRACKETS = [
-    (56_210_000, 0.10),
-    (112_420_000, 0.15),
-    (float("inf"), 0.20),
-]
-
-def _calc_progressive_tax(taxable: float) -> float:
-    remain = taxable
-    last_cap = 0.0
-    tax = 0.0
-    for cap, rate in BRACKETS:
-        if remain <= 0:
-            break
-        band = min(remain, cap - last_cap)
-        if band > 0:
-            tax += band * rate
-            remain -= band
-        last_cap = cap
-    return max(0.0, tax)
+def _fmt_pct(x: float) -> str:
+    return f"{x*100:,.2f}%"
 
 def render():
-    st.set_page_config(page_title="AI 工具｜遺產稅估算（標準模式）", page_icon="🧮", layout="wide", initial_sidebar_state="collapsed")
-    st.markdown("""<style>[data-testid='stSidebar']{display:none!important;}section[data-testid='stSidebar']{display:none!important;}</style>""", unsafe_allow_html=True)
+    st.subheader("🏛️ AI 秒算遺產稅（累進稅率）")
 
-    st.title("🧮 遺產稅估算（標準模式／固定法規）")
-    st.caption("免稅額、喪葬費、每人扣除額與稅率級距皆固定；只需輸入金額與人數。")
+    with st.expander("輸入方式", expanded=True):
+        mode = st.radio("選擇計算方式", ["快速模式（直接輸入淨遺產）", "完整模式（總額－債務－扣除）"], horizontal=True, key="et_mode")
 
-    colA, colB = st.columns(2)
-    with colA:
-        gross = st.number_input("遺產總額（NTD）", min_value=0.0, step=1_000_000.0, format="%.0f")
-        debts = st.number_input("債務與其他扣除（NTD）", min_value=0.0, step=100_000.0, format="%.0f",
-                                help="如醫療費、合法債務、慈善等符合規定之扣除。")
-    with colB:
-        st.markdown("**家屬扣除（僅填人數）**")
-        spouse_n = st.number_input("配偶（人）", min_value=0, max_value=1, step=1, value=0)
-        child_n  = st.number_input("子女／孫子女（人）", min_value=0, step=1, value=0)
-        parent_n = st.number_input("父母（人）", min_value=0, step=1, value=0)
+    if mode.startswith("快速"):
+        net_estate = st.number_input("淨遺產（元）", min_value=0.0, step=1_000_000.0, value=100_000_000.0, key="et_net_quick")
+        total = None; debts = None; deductions = None
+    else:
+        c1, c2 = st.columns(2)
+        with c1:
+            total = st.number_input("遺產總額（元）", min_value=0.0, step=1_000_000.0, value=120_000_000.0, key="et_total")
+            debts = st.number_input("負債／抵押（元）", min_value=0.0, step=1_000_000.0, value=10_000_000.0, key="et_debts")
+        with c2:
+            deductions = st.number_input("其他扣除（喪葬、特別扣除等，元）", min_value=0.0, step=500_000.0, value=0.0, key="et_deducts")
+        net_estate = max(total - debts - deductions, 0.0)
 
-    st.markdown("""---""")
-    st.subheader("📌 固定法規參數（不可修改）")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("基本免稅額", f"{EXEMPTION:,.0f}")
-        st.metric("喪葬費", f"{FUNERAL:,.0f}")
-    with col2:
-        st.write("**每人扣除額**")
-        st.table({
-            "項目": ["配偶", "子女／孫子女", "父母"],
-            "每人金額（NTD）": [f"{SPOUSE_DED:,.0f}", f"{CHILD_DED:,.0f}", f"{PARENT_DED:,.0f}"]
-        })
-    with col3:
-        st.write("**級距與稅率**")
-        st.table({
-            "區間上限（NTD）": ["56,210,000", "112,420,000", "∞"],
-            "稅率": ["10%", "15%", "20%"]
-        })
+    with st.expander("參數（可調整）", expanded=False):
+        basic_ex = st.number_input("基本免稅額（元）", min_value=0.0, step=1_000_000.0, value=12_000_000.0, key="et_basic_ex")
+        st.caption("＊其他扣除（配偶、撫養、喪葬、慈善等）請先在『完整模式』合併於扣除欄位。")
 
-    family_deductions = spouse_n * SPOUSE_DED + child_n * CHILD_DED + parent_n * PARENT_DED
-    total_deductions = EXEMPTION + FUNERAL + debts + family_deductions
-    taxable_base = max(0.0, gross - total_deductions)
-    tax = _calc_progressive_tax(taxable_base)
+        st.write("累進稅率（區間上限／稅率）")
+        # 可在 UI 動態調整各級門檻與稅率
+        brackets = []
+        for i, (thr, rate) in enumerate(DEFAULT_BRACKETS, start=1):
+            col1, col2 = st.columns(2)
+            with col1:
+                thr_ui = st.number_input(f"第{i}級區間上限（元）", min_value=1_000_000.0, step=1_000_000.0,
+                                         value=thr if thr != float('inf') else 100_000_000.0, key=f"et_thr_{i}")
+            with col2:
+                rate_ui = st.slider(f"第{i}級稅率（%）", 0.0, 100.0, rate*100, 0.5, key=f"et_rate_{i}") / 100.0
+            if i < len(DEFAULT_BRACKETS):
+                brackets.append((thr_ui, rate_ui))
+            else:
+                # 最高級無上限
+                brackets.append((float('inf'), rate_ui))
 
-    st.markdown("""---""")
-    st.subheader("🧾 試算結果")
-    colR1, colR2, colR3 = st.columns(3)
-    with colR1:
-        st.metric("遺產總額", f"{gross:,.0f}")
-    with colR2:
-        st.metric("可扣除總額", f"{total_deductions:,.0f}")
-        st.caption(f"(含免稅額 {EXEMPTION:,.0f}、喪葬費 {FUNERAL:,.0f}、債務/其他 {debts:,.0f}、家屬扣除 {family_deductions:,.0f})")
-    with colR3:
-        st.metric("課稅基礎", f"{taxable_base:,.0f}")
-        st.metric("估算稅額", f"{tax:,.0f}")
+    res = calc_estate_tax_progressive(EstateTaxInput(net_estate=net_estate, basic_exemption=basic_ex, brackets=brackets))
 
-    st.caption("此為示意估算，級距與扣除額依現行公告；實務仍以主管機關規定與申報文件為準。")
+    # 結果卡片（不使用 st.metric，避免數字放大）
+    st.markdown("### 結果")
+    cA, cB, cC = st.columns(3)
+    with cA:
+        st.markdown("**應稅基**")
+        st.markdown(f"<div class='kpi'>{_fmt_twd(res['taxable'])}</div>", unsafe_allow_html=True)
+    with cB:
+        st.markdown("**估算稅額**")
+        st.markdown(f"<div class='kpi'>{_fmt_twd(res['tax'])}</div>", unsafe_allow_html=True)
+    with cC:
+        st.markdown("**有效稅率**")
+        st.markdown(f"<div class='kpi'>{_fmt_pct(res['effective_rate'])}</div>", unsafe_allow_html=True)
+
+    with st.expander("課稅級距明細", expanded=True):
+        rows = res["details"]
+        if rows:
+            # 轉置成易讀表格
+            table_rows = [{
+                "區間": f"{_fmt_twd(r['區間起'])} ~ { '以上' if r['區間迄']==float('inf') else _fmt_twd(r['區間迄']) }",
+                "稅率": _fmt_pct(r["稅率"]),
+                "課稅額": _fmt_twd(r["課稅額"]),
+                "稅額": _fmt_twd(r["稅額"]),
+            } for r in rows]
+            st.table(table_rows)
+        else:
+            st.info("無課稅明細（應稅基為 0）。")
+
+    # 說明
+    st.caption("""
+＊本計算為示意用途，實務請依最新法規、扣除額類型與證明文件調整，並經專業顧問覆核。
+    """)
