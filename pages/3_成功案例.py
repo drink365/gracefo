@@ -1,7 +1,15 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="成功案例｜永傳家族傳承導師", page_icon="🏆", layout="wide")
+st.\1
+st.markdown("""
+<style>
+/* Hide and remove the sidebar completely */
+[data-testid="stSidebar"] { display: none !important; }
+section[data-testid="stSidebar"] { display: none !important; }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🏆 成功案例")
 st.write("以下為去識別化示意，真實專案將於簽署保密條款後進行。")
 

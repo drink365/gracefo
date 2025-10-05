@@ -1,7 +1,14 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="解決方案｜永傳家族傳承導師", page_icon="🧭", layout="wide")
+st.\1
+st.markdown("""
+<style>
+/* Hide and remove the sidebar completely */
+[data-testid="stSidebar"] { display: none !important; }
+section[data-testid="stSidebar"] { display: none !important; }
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🧭 解決方案")
 st.write("以角色與情境設計三層服務：策略設計 × 工具模擬 × 落地陪伴。")

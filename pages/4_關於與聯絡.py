@@ -1,7 +1,15 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="關於與聯絡｜永傳家族傳承導師", page_icon="🤝", layout="wide")
+st.\1
+st.markdown("""
+<style>
+/* Hide and remove the sidebar completely */
+[data-testid="stSidebar"] { display: none !important; }
+section[data-testid="stSidebar"] { display: none !important; }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🤝 關於與聯絡")
 
 st.markdown("我們以人為本，結合國際法稅與保險策略，協助高資產家族完成跨世代傳承。")
