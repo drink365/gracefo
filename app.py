@@ -6,10 +6,11 @@ import csv, os
 st.set_page_config(
     page_title="永傳家族傳承導師｜《影響力》傳承策略平台",
     page_icon="assets/favicon.png",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# ---------- Global CSS (raw string, no formatting) ----------
+# ---------- Global CSS ----------
 st.markdown("""
 <style>
 @font-face {
@@ -21,30 +22,26 @@ st.markdown("""
 html, body, [class*="css"] {
   font-family: 'NotoSansTC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
 }
-
-/* Wide layout */
+/* Hide and remove the sidebar completely */
+[data-testid="stSidebar"] { display: none !important; }
+section[data-testid="stSidebar"] { display: none !important; }
 .block-container {max-width: 1200px !important;}
-
-/* Hide default Streamlit menu & footer to make room for brand */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
+/* Light hero (no heavy background) */
 .hero {
-  background: linear-gradient(120deg, #0E1E42 0%, #173B6D 100%);
   border-radius: 20px;
-  padding: 48px 40px;
-  color: white;
+  padding: 28px 28px;
+  color: #0F172A;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(15,23,42,0.08);
+  backdrop-filter: blur(2px);
   margin-bottom: 24px;
 }
-.hero h1 {
-  font-size: 40px;
-  margin-bottom: 12px;
-}
-.hero p {
-  font-size: 18px;
-  opacity: 0.95;
-}
+.hero h1 { font-size: 36px; margin-bottom: 10px; }
+.hero p { font-size: 18px; opacity: 0.95; }
 
 .card {
   padding: 18px 16px;
@@ -54,50 +51,35 @@ header {visibility: hidden;}
   box-shadow: 0 6px 18px rgba(10, 28, 58, 0.06);
 }
 
-.small {
-  font-size: 13px;
-  color: #6b7280;
+.navbar{
+  display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;
 }
-
-.section-title{
-  font-weight: 700;
-  font-size: 24px;
-  margin: 8px 0 0 0;
+.navbtn{
+  display:inline-block; padding:10px 14px; border-radius:999px;
+  border:1px solid rgba(15,23,42,0.12); background:#fff; text-decoration:none !important;
 }
-
-.cta {
-  display: inline-block;
-  padding: 12px 18px;
-  border-radius: 999px;
-  background: #F4B400;
-  color: #111 !important;
-  font-weight: 700;
-  text-decoration: none !important;
-  margin-right: 8px;
-}
-
-.ghost {
-  display: inline-block;
-  padding: 12px 18px;
-  border-radius: 999px;
-  border: 2px solid #F4B400;
-  color: #F4B400 !important;
-  font-weight: 700;
-  text-decoration: none !important;
-}
-hr{border: none; border-top: 1px solid #eee; margin: 20px 0;}
+.cta { display:inline-block; padding:12px 18px; border-radius:999px; background:#F4B400; color:#111 !important; font-weight:700; text-decoration:none !important; margin-right:8px;}
+.ghost { display:inline-block; padding:12px 18px; border-radius:999px; border:2px solid #F4B400; color:#F4B400 !important; font-weight:700; text-decoration:none !important;}
+hr{border:none; border-top:1px solid #eee; margin:20px 0;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Brand header ---
+# --- Top Brand + Simple Navbar ---
 col_logo, col_head = st.columns([1,3], vertical_alignment="center")
 with col_logo:
     st.image("assets/logo.png", use_container_width=True)
 with col_head:
     st.markdown("### 永傳家族傳承導師｜《影響力》傳承策略平台")
     st.caption("專業 × 溫暖 × 信任｜讓家族的愛與資產，都能安全傳承三代。")
+    st.markdown('<div class="navbar">', unsafe_allow_html=True)
+    st.page_link("app.py", label="首頁", icon="🏠")
+    st.page_link("pages/1_解決方案.py", label="解決方案", icon="🧭")
+    st.page_link("pages/2_工具箱.py", label="工具箱", icon="🧰")
+    st.page_link("pages/3_成功案例.py", label="成功案例", icon="🏆")
+    st.page_link("pages/4_關於與聯絡.py", label="關於與聯絡", icon="🤝")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Hero Section ---
+# --- Hero Section (no dark background) ---
 with st.container():
     st.markdown('''
     <div class="hero">
@@ -127,7 +109,7 @@ with c3:
     </div>''', unsafe_allow_html=True)
 
 st.write("")
-st.markdown("#### 我們的方法｜專業顧問＋AI 模組")
+st.markdown("#### 我們的方法｜專業顧問＋AI 模組", help="方法論與工具並行，提升決策品質與效率")
 m1, m2, m3 = st.columns(3)
 with m1:
     st.markdown('''<div class="card">
@@ -142,17 +124,14 @@ with m3:
     <b>法稅合規</b><br/>整合法稅與保險策略，重視風險防範與代間信任的建立。
     </div>''', unsafe_allow_html=True)
 
+# --- Quick Links Section to your tools/pages ---
 st.write("")
-st.markdown("#### 社會信任與見證")
-tc1, tc2 = st.columns(2)
-with tc1:
-    st.markdown('''<div class="card">
-    <b>教學與培訓</b><br/>勞動部《理財規劃實務》《傳承規劃實務》講師；企業主專題講座。
-    </div>''', unsafe_allow_html=True)
-with tc2:
-    st.markdown('''<div class="card">
-    <b>真實案例</b><br/>高齡長輩 5 億保額規劃：減輕稅負、婚前財產隔離、三代共好。
-    </div>''', unsafe_allow_html=True)
+st.markdown("#### 工具快速入口")
+ql1, ql2, ql3, ql4 = st.columns(4)
+with ql1: st.page_link("pages/2_工具箱.py", label="打開 AI 工具箱", icon="🧰")
+with ql2: st.page_link("pages/1_解決方案.py", label="查看解決方案", icon="🧭")
+with ql3: st.page_link("pages/3_成功案例.py", label="瀏覽成功案例", icon="🏆")
+with ql4: st.page_link("pages/4_關於與聯絡.py", label="聯絡我們", icon="🤝")
 
 st.write("")
 st.markdown("---")
@@ -160,38 +139,90 @@ st.markdown("---")
 # --- Lead Form (Anchor: lead) ---
 st.markdown('<a id="lead"></a>', unsafe_allow_html=True)
 st.markdown("### 預約 30 分鐘傳承健檢")
-st.caption("留下聯絡方式，將由顧問與您確認時間（線上或線下）。")
 
-with st.form("lead_form"):
+st.caption("送出後，系統會將資料寫入 `leads.csv`，並嘗試寄信通知。")
+
+def _send_email_notification(payload: dict):
+    try:
+        import smtplib
+        from email.message import EmailMessage
+        s = st.secrets.get("smtp", {})
+        host = s.get("host")
+        port = int(s.get("port", 587))
+        user = s.get("user")
+        pwd  = s.get("pass")
+        to   = s.get("to", "123@gracefo.com")
+
+        if not (host and user and pwd):
+            return False, "未設定 SMTP 憑證，略過寄信"
+
+        msg = EmailMessage()
+        msg["Subject"] = "【傳承健檢預約】" + payload.get("name", "")
+        msg["From"] = user
+        msg["To"] = to
+        lines = [f"{k}: {v}" for k, v in payload.items()]
+        msg.set_content("\\n".join(lines))
+
+        with smtplib.SMTP(host, port) as server:
+            server.starttls()
+            server.login(user, pwd)
+            server.send_message(msg)
+        return True, "Email 已寄出"
+    except Exception as e:
+        return False, f"寄信失敗：{e}"
+
+
+with st.form("lead_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        name = st.text_input("姓名/稱呼 *")
-        phone = st.text_input("手機 *")
+        name = st.text_input("姓名/稱呼（必填） *")
+        phone = st.text_input("手機（必填） *")
         email = st.text_input("Email（可選）")
     with col2:
-        role = st.selectbox("身份", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
-        date_pref = st.date_input("偏好日期", value=None)
-        time_pref = st.selectbox("時段偏好", ["上午", "下午", "不限"])
+        role = st.selectbox("身份（可選）", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
+        date_pref = st.date_input("偏好日期（可選）", value=None)
+        time_pref = st.selectbox("時段偏好（可選）", ["不限", "上午", "下午"], index=0)
 
     memo = st.text_area("想先讓我們了解的重點（可選）", placeholder="例：資產分佈、傳承顧慮、跨境情境、股權安排…")
-
     agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
-    submitted = st.form_submit_button("送出預約")
 
-if submitted and agreed and name and phone:
+    submit_disabled = not (agreed and name.strip() and phone.strip())
+    submitted = st.form_submit_button("送出預約", disabled=submit_disabled)
+
+if submitted:
     save_path = "leads.csv"
-    new_row = [datetime.now().isoformat(), name, phone, email, role, str(date_pref) if date_pref else "", time_pref, memo]
+    new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, str(date_pref) if date_pref else "", time_pref, memo.strip()]
     write_header = not os.path.exists(save_path)
     with open(save_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if write_header:
             writer.writerow(["created_at","name","phone","email","role","date_pref","time_pref","memo"])
         writer.writerow(new_row)
-    st.success("已收到您的預約，我們將盡快與您確認時間。謝謝！")
-elif submitted and not (name and phone):
-    st.warning("請填寫姓名與手機，以便聯繫您。")
+    # Email payload
+    payload = {
+        "created_at": new_row[0],
+        "name": new_row[1],
+        "phone": new_row[2],
+        "email": new_row[3],
+        "role": new_row[4],
+        "date_pref": new_row[5],
+        "time_pref": new_row[6],
+        "memo": new_row[7],
+    }
+    ok, msg = _send_email_notification(payload)
+    if ok:
+        st.success("✅ 已收到您的預約，並已發送 Email 通知。")
+    else:
+        st.success("✅ 已收到您的預約。")
+        st.caption(msg)
+    st.caption("資料已寫入專案根目錄的 `leads.csv`。若部署於 Streamlit Cloud，建議定期下載備份或串接雲端儲存。")
 
-st.write("")
+# Show download button if leads.csv exists
+if os.path.exists("leads.csv"):
+    with open("leads.csv", "r", encoding="utf-8") as f:
+        csv_bytes = f.read().encode("utf-8")
+    st.download_button("下載目前的 leads.csv", data=csv_bytes, file_name="leads.csv", mime="text/csv")
+
 st.markdown("----")
 st.markdown(
     "《影響力》傳承策略平台｜永傳家族辦公室  \n"
