@@ -1,34 +1,17 @@
 # ==== HOME: Hero + Values + Roles + Tools + Success + CTA ====
-st.markdown("""
-<style>
-.hero {
-  padding: 56px 28px; border-radius: 20px;
-  background: linear-gradient(180deg, #EAF4FF 0%, #ffffff 100%);
-  border: 1px solid #E2E8F0; margin-bottom: 16px;
-}
-.hero h1 { font-size: 36px; line-height:1.25; margin:0 0 12px; color:#0F2E63; }
-.hero p { font-size: 18px; margin:0 0 20px; color:#2D3748; }
-.hero .note { font-size:13px; color:#4A5568; }
-.section-title { font-size: 22px; font-weight:700; margin: 24px 0 12px; color:#0F2E63; }
-.card { background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:20px; height:100%; }
-.card h3 { margin:0 0 8px; font-size:20px; }
-.card p { margin:0; color:#4A5568;}
-.cta { display:inline-block; background:#145DA0; color:#fff; padding:12px 20px; border-radius:999px; text-decoration:none; }
-.cta:hover { background:#0F4D88; }
-.tool-link { text-decoration:none; }
-.badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#EDF2F7; color:#2D3748; margin-left:8px;}
-</style>
-""", unsafe_allow_html=True)
-
-# --- Hero ---
 st.markdown('''
 <div class="hero">
-  <h1>準備與從容，我的運動員人生哲學</h1>
-  <p>富足退休、富裕一生、富貴傳承——讓資產、責任與愛，在正確的時間，交到最對的人手上。</p>
-  <a class="cta" href="#booking">預約 30 分鐘傳承健檢</a>
-  <div class="note">線上或現場，皆可</div>
+  <h1>面向監管與市場週期的家族治理解決方案</h1>
+  <p>以合規為底、以現金流為骨、以家族共識為核心，為企業家打造可預期的交棒路徑。</p>
+  <p style="margin: 16px 0;">
+    <a class="cta" href="#booking">預約健檢</a>
+    <span style="margin-left:12px;">
+      <a class="tool-link" href="/?download=governance-checklist">索取治理清單 →</a>
+    </span>
+  </p>
+  <div class="note">線上或現場皆可｜守秘合規</div>
 </div>
-''' , unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
 # --- 三大價值 ---
 st.markdown('<div class="section-title">我們的三大價值</div>', unsafe_allow_html=True)
