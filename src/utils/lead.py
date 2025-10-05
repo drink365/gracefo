@@ -13,6 +13,7 @@ PRESET_TOPICS = [
 ]
 
 def _send_email_notification(payload: dict):
+    """Best-effort email via st.secrets['smtp'] settings. Returns (ok, msg)."""
     try:
         import smtplib
         from email.message import EmailMessage
@@ -30,8 +31,8 @@ def _send_email_notification(payload: dict):
         msg["Subject"] = "【傳承健檢預約】" + payload.get("name", "")
         msg["From"] = user
         msg["To"] = to
-        lines = [f"{k}: {v}" for k, v in payload.items()]
-        msg.set_content("\n".join(lines))
+        body_lines = [f"{k}: {v}" for k, v in payload.items()]
+        msg.set_content("\n".join(body_lines))
 
         with smtplib.SMTP(host, port) as server:
             server.starttls()
@@ -42,6 +43,7 @@ def _send_email_notification(payload: dict):
         return False, f"寄信失敗：{e}"
 
 def _track_event(event_type: str, page_name: str, detail: str = ""):
+    """Append simple event logs to events.csv for conversion tracking."""
     try:
         save_path = "events.csv"
         write_header = not os.path.exists(save_path)
@@ -50,7 +52,7 @@ def _track_event(event_type: str, page_name: str, detail: str = ""):
             if write_header:
                 w.writerow(["ts","event_type","page","detail"])
             w.writerow([datetime.now().isoformat(), event_type, page_name, detail])
-    except Exception as e:
+    except Exception:
         pass
 
 def render_lead_cta(page_name: str):
@@ -73,25 +75,24 @@ def render_lead_cta(page_name: str):
 
             agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
 
-            # Validate required fields
-            required_ok = all([
-                name.strip(), phone.strip(), email.strip(), role.strip(), time_pref.strip(), agreed,
-                (len(topics) > 0 or memo.strip())
-            ])
-            submitted = st.form_submit_button('送出預約')
+            # Always enable button; do validation after submit
+            submitted = st.form_submit_button("送出預約")
 
         if submitted:
-    errors = []
-    if not name.strip(): errors.append('請填寫姓名')
-    if not phone.strip(): errors.append('請填寫手機')
-    if not email.strip(): errors.append('請填寫 Email')
-    if not role.strip(): errors.append('請選擇身份')
-    if not time_pref.strip(): errors.append('請選擇時段偏好')
-    if not (len(topics) > 0 or memo.strip()): errors.append('請至少勾選一個主題或填寫補充說明')
-    if not agreed: errors.append('請勾選同意聯繫')
-    if errors:
-        st.error('；'.join(errors))
-        st.stop()
+            # Server-side validation
+            errors = []
+            if not name.strip(): errors.append("請填寫姓名")
+            if not phone.strip(): errors.append("請填寫手機")
+            if not email.strip(): errors.append("請填寫 Email")
+            if not role.strip(): errors.append("請選擇身份")
+            if not time_pref.strip(): errors.append("請選擇時段偏好")
+            if not (len(topics) > 0 or memo.strip()): errors.append("請至少勾選一個主題或填寫補充說明")
+            if not agreed: errors.append("請勾選同意聯繫")
+
+            if errors:
+                st.error("；".join(errors))
+                st.stop()
+
             topics_str = ", ".join(topics) if topics else ""
             memo_full = (topics_str + ("；" if topics_str and memo.strip() else "") + memo.strip()).strip()
 
@@ -115,6 +116,6 @@ def render_lead_cta(page_name: str):
             if ok:
                 st.success("✅ 已收到您的預約，並已發送 Email 通知。")
             else:
-                st.success("✅ 已收到您的預約。")
+                st.success("✅ 已收到您的預約（未寄信）。")
                 st.caption(msg)
             st.caption("資料已寫入 `leads.csv`；事件已記錄於 `events.csv`。")
