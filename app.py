@@ -1,198 +1,227 @@
-
 import streamlit as st
-from datetime import datetime, date
-import csv, os
+from pathlib import Path as _Path
+_fav = _Path(__file__).parent / "favicon.png"
+if _fav.exists():
+    st.set_page_config(page_title="永傳家族傳承導師｜影響力傳承平台", page_icon=str(_fav), layout="wide")
+else:
+    st.set_page_config(page_title="永傳家族傳承導師｜影響力傳承平台", page_icon="✨", layout="wide")
 
-st.set_page_config(page_title="永傳家族傳承導師｜《影響力》傳承策略平台", page_icon="assets/favicon.png", layout="wide")
+# ==== HOME: Hero + Values + Roles + Tools + Success + CTA ====
+st.markdown('''
+<div class="hero">
+  <h1>面向監管與市場週期的家族治理解決方案</h1>
+  <p>以合規為底、以現金流為骨、以家族共識為核心，為企業家打造可預期的交棒路徑。</p>
+  <p style="margin: 16px 0;">
+    <a class="cta" href="#booking">預約健檢</a>
+    <span style="margin-left:12px;">
+      <a class="tool-link" href="/?download=governance-checklist">索取治理清單 →</a>
+    </span>
+  </p>
+  <div class="note">線上或現場皆可｜守秘合規</div>
+</div>
+''', unsafe_allow_html=True)
 
+# --- 三大價值 ---
+st.markdown('<div class="section-title">我們的三大價值</div>', unsafe_allow_html=True)
+v1, v2, v3 = st.columns(3)
+with v1:
+    st.markdown('<div class="card"><h3>專業</h3><p>跨境法稅 × 保單 × 信託整合，由美國 CPA 與實務團隊把關。</p></div>', unsafe_allow_html=True)
+with v2:
+    st.markdown('<div class="card"><h3>智能</h3><p>AI 傳承導師｜工具箱，將模糊問題變成可決策的選項。</p></div>', unsafe_allow_html=True)
+with v3:
+    st.markdown('<div class="card"><h3>永續</h3><p>為家業、家產、家風設計長期穩定現金流與治理機制。</p></div>', unsafe_allow_html=True)
 
-<style>
-@font-face {{
-  font-family: 'NotoSansTC';
-  src: url('assets/NotoSansTC-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}}
-html, body, [class*="css"] {{
-  font-family: 'NotoSansTC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
-}}
-
-/* Wide layout */
-.block-container {{max-width: 1200px !important;}}
-
-/* Hide default Streamlit menu & footer to make room for brand */
-#MainMenu {{visibility: hidden;}}
-footer {{visibility: hidden;}}
-header {{visibility: hidden;}}
-
-.hero {{
-  background: linear-gradient(120deg, #0E1E42 0%, #173B6D 100%);
-  border-radius: 20px;
-  padding: 48px 40px;
-  color: white;
-  margin-bottom: 24px;
-}}
-.hero h1 {{
-  font-size: 40px;
-  margin-bottom: 12px;
-}}
-.hero p {{
-  font-size: 18px;
-  opacity: 0.95;
-}}
-
-.card {{
-  padding: 18px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(10, 28, 58, 0.06);
-}}
-
-.small {{
-  font-size: 13px;
-  color: #6b7280;
-}}
-
-.section-title{{
-  font-weight: 700;
-  font-size: 24px;
-  margin: 8px 0 0 0;
-}}
-
-.cta {{
-  display: inline-block;
-  padding: 12px 18px;
-  border-radius: 999px;
-  background: #F4B400;
-  color: #111 !important;
-  font-weight: 700;
-  text-decoration: none !important;
-  margin-right: 8px;
-}}
-
-.ghost {{
-  display: inline-block;
-  padding: 12px 18px;
-  border-radius: 999px;
-  border: 2px solid #F4B400;
-  color: #F4B400 !important;
-  font-weight: 700;
-  text-decoration: none !important;
-}}
-hr{{border: none; border-top: 1px solid #eee; margin: 20px 0;}}
-</style>
-
-
-# --- Brand header ---
-col_logo, col_head = st.columns([1,3], vertical_alignment="center")
-with col_logo:
-    st.image("assets/logo.png", use_container_width=True)
-with col_head:
-    st.markdown("### 永傳家族傳承導師｜《影響力》傳承策略平台")
-    st.caption("專業 × 溫暖 × 信任｜讓家族的愛與資產，都能安全傳承三代。")
-
-# --- Hero Section ---
-with st.container():
+# --- 你是誰（角色導向） ---
+st.markdown('<div class="section-title">你是誰？我們怎麼幫你</div>', unsafe_allow_html=True)
+r1, r2 = st.columns(2)
+with r1:
     st.markdown('''
-    <div class="hero">
-        <h1>準備與從容，為家族打造「財務確定性」</h1>
-        <p>結合財稅專業與保險策略，打造跨世代的傳承方案——把愛與資產，放心交棒。</p>
-        <div style="margin-top:10px;">
-            <a class="cta" href="#lead">預約 30 分鐘傳承健檢</a>
-            <a class="ghost" href="#tools">試用 AI 工具箱</a>
-        </div>
-    </div>
-    ''', unsafe_allow_html=True)
+<div class="card">
+  <h3>創辦人一代<span class="badge">交棒設計</span></h3>
+  <p>稅負可預期、交棒有秩序、關鍵資產不外流。</p>
+  <p><a class="cta" href="#booking">談談您的情況</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with r2:
+    st.markdown('''
+<div class="card">
+  <h3>二代接班<span class="badge">治理升級</span></h3>
+  <p>權責清楚、分配公平、治理不失速。</p>
+  <p><a class="cta" href="#booking">預約顧問</a></p>
+</div>
+''' , unsafe_allow_html=True)
 
-# --- Who & Problems ---
-st.markdown("#### 你在找的，可能是這些答案：")
-c1, c2, c3 = st.columns(3)
+r3, r4 = st.columns(2)
+with r3:
+    st.markdown('''
+<div class="card">
+  <h3>跨境資產<span class="badge">合規路徑</span></h3>
+  <p>稅務合規、文件齊備、傳承路徑清楚。</p>
+  <p><a class="cta" href="#booking">了解作法</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with r4:
+    st.markdown('''
+<div class="card">
+  <h3>長輩照顧<span class="badge">保障安排</span></h3>
+  <p>照護資金有安排、分期給付、避免爭產。</p>
+  <p><a class="cta" href="#booking">開始規劃</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+# --- 工具箱 ---
+st.markdown('<div class="section-title">工具箱（立即可用）</div>', unsafe_allow_html=True)
+g1, g2 = st.columns(2)
+with g1:
+    st.markdown('''
+<div class="card">
+  <h3>📦 保單策略規劃</h3>
+  <p>用 20% 的保費守護 100% 的資產。</p>
+  <p><a class="cta tool-link" href="/?tool=policy">立即試用</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with g2:
+    st.markdown('''
+<div class="card">
+  <h3>⚖️ 遺產稅秒算</h3>
+  <p>快速試算、看見差額，做出好決策。</p>
+  <p><a class="cta tool-link" href="/?tool=estate">立即試算</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+g3, g4 = st.columns(2)
+with g3:
+    st.markdown('''
+<div class="card">
+  <h3>🗺️ 傳承地圖</h3>
+  <p>資產六大類 × 風險雷達，一張圖看全局。</p>
+  <p><a class="cta tool-link" href="/?tool=map">開始製作</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+with g4:
+    st.markdown('''
+<div class="card">
+  <h3>💬 顧問對話庫</h3>
+  <p>讓家族對話更順暢。</p>
+  <p><a class="cta tool-link" href="/?tool=dialog">看看範例</a>　<a class="tool-link" href="#booking">諮詢顧問 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
+
+# --- 成功案例（結果導向） ---
+st.markdown('<div class="section-title">成功案例（結果導向）</div>', unsafe_allow_html=True)
+c1, c2 = st.columns(2)
 with c1:
-    st.markdown('''<div class="card">
-    <b>創辦人一代</b><br/>如何在合法節稅下，把股權與現金流安全交棒？
-    </div>''', unsafe_allow_html=True)
+    st.markdown('''
+<div class="card">
+  <h3>90 歲長輩 5 億保額傳承</h3>
+  <p>壓縮贈與、指定第三代、婚前財產隔離。</p>
+  <p><a class="tool-link" href="#booking">閱讀重點 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
 with c2:
-    st.markdown('''<div class="card">
-    <b>企業接班</b><br/>贈與、信託、保單如何搭配？怎麼設計最穩妥又有效率？
-    </div>''', unsafe_allow_html=True)
-with c3:
-    st.markdown('''<div class="card">
-    <b>跨境家族</b><br/>台灣 / 中國大陸 / 美國多地資產與稅務，應如何兼顧？
-    </div>''', unsafe_allow_html=True)
+    st.markdown('''
+<div class="card">
+  <h3>製造業二代交棒</h3>
+  <p>股權信託 + 保單現金流，兼顧治理與流動性。</p>
+  <p><a class="tool-link" href="#booking">閱讀重點 →</a></p>
+</div>
+''' , unsafe_allow_html=True)
 
-st.write("")
-st.markdown("#### 我們的方法｜專業顧問＋AI 模組")
-m1, m2, m3 = st.columns(3)
-with m1:
-    st.markdown('''<div class="card">
-    <b>顧問框架</b><br/>以「家業／家產／家風」為主軸，建立可控的權責與現金流。
-    </div>''', unsafe_allow_html=True)
-with m2:
-    st.markdown('''<div class="card" id="tools">
-    <b>AI 工具箱</b><br/>遺產稅估算、贈與壓縮、保單策略模擬、價值觀探索。
-    </div>''', unsafe_allow_html=True)
-with m3:
-    st.markdown('''<div class="card">
-    <b>法稅合規</b><br/>整合法稅與保險策略，重視風險防範與代間信任的建立。
-    </div>''', unsafe_allow_html=True)
+# --- 底部 CTA ---
+st.markdown('''
+<div class="section-card">
+  <h3>預約 30 分鐘傳承健檢（免費）</h3>
+  <p>已協助超過 <b>XXX</b> 位企業家完成跨境傳承規劃（勞動部／產投授課講師）。</p>
+  <a class="cta" href="#booking">立即預約</a>
+</div>
+''' , unsafe_allow_html=True)
+# ==== END HOME ====
+import streamlit as st
+import base64
 
-st.write("")
-st.markdown("#### 社會信任與見證")
-tc1, tc2 = st.columns(2)
-with tc1:
-    st.markdown('''<div class="card">
-    <b>教學與培訓</b><br/>勞動部《理財規劃實務》《傳承規劃實務》講師；企業主專題講座。
-    </div>''', unsafe_allow_html=True)
-with tc2:
-    st.markdown('''<div class="card">
-    <b>真實案例</b><br/>高齡長輩 5 億保額規劃：減輕稅負、婚前財產隔離、三代共好。
-    </div>''', unsafe_allow_html=True)
+# 設定頁面
+st.set_page_config(
+    page_title="《影響力》 | 高資產家庭的傳承策略入口",
+    page_icon="🌿",
+    layout="centered"
+)
 
-st.write("")
+# 讀取 logo
+def load_logo_base64(image_path):
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+try:
+    logo_base64 = load_logo_base64("logo.png")
+    st.markdown(f"""
+    <div style='text-align: center;'>
+        <img src='data:image/png;base64,{logo_base64}' width='200'><br>
+    </div>
+    """, unsafe_allow_html=True)
+except:
+    st.warning("⚠️ 無法載入 logo.png，請確認檔案存在")
+
+# --- 品牌標語區 ---
+st.markdown("""
+<div style='text-align: center; margin-top: 2em;'>
+    <h1 style='font-size: 36px; font-weight: bold;'>《影響力》</h1>
+    <p style='font-size: 24px; color: #333; font-weight: bold; letter-spacing: 0.5px;'>
+        高資產家庭的 <span style="color:#006666;">傳承策略平台</span>
+    </p>
+    <p style='font-size: 18px; color: #888; margin-top: -10px;'>
+        讓每一分資源，都成為你影響力的延伸
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+# --- 品牌開場語 ---
+st.markdown("""
+<div style='text-align: center; margin-top: 3em; font-size: 18px; line-height: 1.8;'>
+    《影響力》是一個專為高資產家庭打造的傳承策略平台。<br>
+    我們陪你設計每一分資源的去向，<br>
+    讓它能守護最重要的人，延續你真正的價值。
+</div>
+""", unsafe_allow_html=True)
+
+# --- 三大價值主張 ---
+st.markdown("""
+<div style='display: flex; justify-content: center; gap: 40px; margin-top: 3em; flex-wrap: wrap;'>
+    <div style='width: 280px; text-align: center;'>
+        <h3>🏛️ 富足結構</h3>
+        <p>為資產設計流動性與穩定性，讓財富更有效率地守護人生階段。</p>
+    </div>
+    <div style='width: 280px; text-align: center;'>
+        <h3>🛡️ 風險預備</h3>
+        <p>從保單、稅源到信託制度，設計資產的防禦系統與轉移機制。</p>
+    </div>
+    <div style='width: 280px; text-align: center;'>
+        <h3>🌱 價值傳遞</h3>
+        <p>不只是金錢，更是精神、信任與選擇，成就跨世代的連結。</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# --- 使用者分流 ---
 st.markdown("---")
+st.markdown("### 🧭 請選擇您的身份：")
 
-# --- Lead Form (Anchor: lead) ---
-st.markdown('<a id="lead"></a>', unsafe_allow_html=True)
-st.markdown("### 預約 30 分鐘傳承健檢")
-st.caption("留下聯絡方式，將由顧問與您確認時間（線上或線下）。")
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🙋 我是客戶", use_container_width=True):
+        st.switch_page("pages/client_home.py")
+with col2:
+    if st.button("🧑‍💼 我是顧問", use_container_width=True):
+        st.switch_page("pages/advisor_home.py")
 
-with st.form("lead_form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        name = st.text_input("姓名/稱呼 *")
-        phone = st.text_input("手機 *")
-        email = st.text_input("Email（可選）")
-    with col2:
-        role = st.selectbox("身份", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
-        date_pref = st.date_input("偏好日期", value=None)
-        time_pref = st.selectbox("時段偏好", ["上午", "下午", "不限"])
-
-    memo = st.text_area("想先讓我們了解的重點（可選）", placeholder="例：資產分佈、傳承顧慮、跨境情境、股權安排…")
-
-    agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
-    submitted = st.form_submit_button("送出預約")
-
-if submitted and agreed and name and phone:
-    save_path = "leads.csv"
-    new_row = [datetime.now().isoformat(), name, phone, email, role, str(date_pref) if date_pref else "", time_pref, memo]
-    write_header = not os.path.exists(save_path)
-    import csv
-    with open(save_path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(["created_at","name","phone","email","role","date_pref","time_pref","memo"])
-        writer.writerow(new_row)
-    st.success("已收到您的預約，我們將盡快與您確認時間。謝謝！")
-elif submitted and not (name and phone):
-    st.warning("請填寫姓名與手機，以便聯繫您。")
-
-st.write("")
-st.markdown("----")
+# --- 聯絡資訊 ---
+st.markdown("---")
 st.markdown(
-    "《影響力》傳承策略平台｜永傳家族辦公室  
-"
-    "聯絡信箱：123@gracefo.com  
-"
-    f"© {datetime.now().year} Grace Family Office"
+    """
+    <div style='display: flex; justify-content: center; align-items: center; gap: 1.5em; font-size: 14px; color: gray;'>
+      <a href='?' style='color:#006666; text-decoration: underline;'>《影響力》傳承策略平台</a>
+      <a href='https://gracefo.com' target='_blank'>永傳家族辦公室</a>
+      <a href='mailto:123@gracefo.com'>123@gracefo.com</a>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
