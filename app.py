@@ -11,7 +11,8 @@ APP_TITLE = "永傳家族傳承導師｜影響力傳承平台"
 root = Path(__file__).parent
 fav = root / "favicon.png"
 if fav.exists():
-else:
+    pass
+# favicon handled globally by ensure_page_config()
 # ------------------------
 # Global styles: hide sidebar / header widgets, widen layout
 # ------------------------
