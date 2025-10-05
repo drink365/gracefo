@@ -71,15 +71,7 @@ with col_logo:
 with col_head:
     st.markdown("### 永傳家族傳承導師｜《影響力》傳承策略平台")
     st.caption("專業 × 溫暖 × 信任｜讓家族的愛與資產，都能安全傳承三代。")
-    st.markdown('<div class="navbar">', unsafe_allow_html=True)
-    st.page_link("app.py", label="首頁", icon="🏠")
-    st.page_link("pages/1_解決方案.py", label="解決方案", icon="🧭")
-    st.page_link("pages/2_工具箱.py", label="工具箱", icon="🧰")
-    st.page_link("pages/3_成功案例.py", label="成功案例", icon="🏆")
-    st.page_link("pages/4_關於與聯絡.py", label="關於與聯絡", icon="🤝")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# --- Hero Section (no dark background) ---
+    # --- Hero Section (no dark background) ---
 with st.container():
     st.markdown('''
     <div class="hero">
@@ -125,14 +117,6 @@ with m3:
     </div>''', unsafe_allow_html=True)
 
 # --- Quick Links Section to your tools/pages ---
-st.write("")
-st.markdown("#### 工具快速入口")
-ql1, ql2, ql3, ql4 = st.columns(4)
-with ql1: st.page_link("pages/2_工具箱.py", label="打開 AI 工具箱", icon="🧰")
-with ql2: st.page_link("pages/1_解決方案.py", label="查看解決方案", icon="🧭")
-with ql3: st.page_link("pages/3_成功案例.py", label="瀏覽成功案例", icon="🏆")
-with ql4: st.page_link("pages/4_關於與聯絡.py", label="聯絡我們", icon="🤝")
-
 st.write("")
 st.markdown("---")
 
