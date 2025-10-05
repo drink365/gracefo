@@ -84,6 +84,9 @@ with st.container():
     </div>
     ''', unsafe_allow_html=True)
 
+st.page_link("pages/2_工具箱.py", label="🧰 試用 AI 工具箱")
+st.page_link("app.py", label="📅 回到預約區（首頁）")
+
 # --- Who & Problems ---
 st.markdown("#### 你在找的，可能是這些答案：")
 c1, c2, c3 = st.columns(3)
@@ -198,33 +201,47 @@ if submitted:
         st.stop()
     topics_str = ", ".join(topics) if topics else ""
     memo_full = (topics_str + ("；" if topics_str and memo.strip() else "") + memo.strip()).strip()
-    save_path = "leads.csv"
-    new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, str(date_pref) if date_pref else "", time_pref, memo_full, "首頁"]
-    write_header = not os.path.exists(save_path)
-    with open(save_path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(["created_at","name","phone","email","role","date_pref","time_pref","memo","source_page"])
-        writer.writerow(new_row)
-
+    from src.utils.lead import _send_email_notification
     payload = {
-        "created_at": new_row[0], "name": new_row[1], "phone": new_row[2],
-        "email": new_row[3], "role": new_row[4], "date_pref": new_row[5],
-        "time_pref": new_row[6], "memo": new_row[7], "source_page": "首頁"
+        "created_at": new_row[0] if 'new_row' in locals() else '',
+        "name": name.strip(),
+        "phone": phone.strip(),
+        "email": email.strip(),
+        "role": role,
+        "date_pref": str(date_pref) if date_pref else "",
+        "time_pref": time_pref,
+        "memo": memo_full,
+        "source_page": "首頁"
     }
-    # reuse helper if exists
-    try:
-        from src.utils.lead import _send_email_notification
-        ok, msg = _send_email_notification(payload)
-        if ok:
-            st.success("✅ 已收到您的預約，並已發送 Email 通知。")
-        else:
-            st.success("✅ 已收到您的預約。"); st.caption(msg)
-    except Exception as e:
+    ok, msg = _send_email_notification(payload)
+    if ok:
+        st.success("✅ 已收到您的預約，並已發送 Email 通知。")
+    else:
         st.success("✅ 已收到您的預約（未寄信）。")
-        st.caption(str(e))
+        st.caption(msg)
 
-    st.caption("資料已寫入專案根目錄的 `leads.csv`。")
+# --- Admin diagnostics (SMTP test) ---
+admin_pin = st.secrets.get("admin_pin", "8888")
+with st.expander("🔧 管理者工具｜Email 測試（僅管理使用）", expanded=False):
+    st.page_link("pages/99_管理｜資料匯出.py", label="管理｜資料匯出", icon="🗂️")
+    pin = st.text_input("管理 PIN", type="password", placeholder="請輸入管理 PIN（預設 8888）")
+    if pin == admin_pin:
+        st.success("管理模式已啟用")
+        smtp_keys = list(st.secrets.get("smtp", {}).keys())
+        st.caption("偵測到的 SMTP 參數鍵： " + ", ".join(smtp_keys))
+        try:
+            from src.utils.lead import send_test_email
+            if st.button("寄送測試信到 smtp.to"):
+                ok, msg = send_test_email()
+                if ok:
+                    st.success("測試信已送出，請檢查收件匣。")
+                else:
+                    st.error("測試信未送出：" + str(msg))
+        except Exception as e:
+            st.error("測試工具載入失敗：" + str(e))
+    else:
+        st.caption("輸入正確的管理 PIN 才能測試；若忘記，可在 secrets 設定 admin_pin。")
+
 st.markdown("----")
 st.markdown(
     "《影響力》傳承策略平台｜永傳家族辦公室  \n"

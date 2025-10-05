@@ -1,7 +1,6 @@
 
 import streamlit as st
 from datetime import datetime
-import csv, os
 
 PRESET_TOPICS = [
     "跨境資產 / 申報與風險",
@@ -13,16 +12,19 @@ PRESET_TOPICS = [
 ]
 
 def _send_email_notification(payload: dict):
-    """Best-effort email via st.secrets['smtp'] settings. Returns (ok, msg)."""
+    """Email via st.secrets['smtp'] settings. Supports username/password & booking.to fallback."""
     try:
         import smtplib
         from email.message import EmailMessage
         s = st.secrets.get("smtp", {})
+        booking = st.secrets.get("booking", {})
         host = s.get("host")
         port = int(s.get("port", 587))
-        user = s.get("user")
-        pwd  = s.get("pass")
-        to   = s.get("to", "123@gracefo.com")
+        user = s.get("user") or s.get("username")
+        pwd  = s.get("pass") or s.get("password")
+        to   = s.get("to") or booking.get("to") or "123@gracefo.com"
+        use_tls = s.get("use_tls", True)
+        use_ssl = s.get("use_ssl", False) or (str(port) == "465")
 
         if not (host and user and pwd):
             return False, "未設定 SMTP 憑證，略過寄信"
@@ -34,26 +36,18 @@ def _send_email_notification(payload: dict):
         body_lines = [f"{k}: {v}" for k, v in payload.items()]
         msg.set_content("\n".join(body_lines))
 
-        with smtplib.SMTP(host, port) as server:
-            server.starttls()
-            server.login(user, pwd)
-            server.send_message(msg)
+        if use_ssl:
+            with smtplib.SMTP_SSL(host, port) as server:
+                server.login(user, pwd)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(host, port) as server:
+                if use_tls: server.starttls()
+                server.login(user, pwd)
+                server.send_message(msg)
         return True, "Email 已寄出"
     except Exception as e:
         return False, f"寄信失敗：{e}"
-
-def _track_event(event_type: str, page_name: str, detail: str = ""):
-    """Append simple event logs to events.csv for conversion tracking."""
-    try:
-        save_path = "events.csv"
-        write_header = not os.path.exists(save_path)
-        with open(save_path, "a", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            if write_header:
-                w.writerow(["ts","event_type","page","detail"])
-            w.writerow([datetime.now().isoformat(), event_type, page_name, detail])
-    except Exception:
-        pass
 
 def render_lead_cta(page_name: str):
     st.markdown("---")
@@ -75,7 +69,6 @@ def render_lead_cta(page_name: str):
 
             agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
 
-            # Always enable button; do validation after submit
             submitted = st.form_submit_button("送出預約")
 
         if submitted:
@@ -88,7 +81,6 @@ def render_lead_cta(page_name: str):
             if not time_pref.strip(): errors.append("請選擇時段偏好")
             if not (len(topics) > 0 or memo.strip()): errors.append("請至少勾選一個主題或填寫補充說明")
             if not agreed: errors.append("請勾選同意聯繫")
-
             if errors:
                 st.error("；".join(errors))
                 st.stop()
@@ -96,26 +88,21 @@ def render_lead_cta(page_name: str):
             topics_str = ", ".join(topics) if topics else ""
             memo_full = (topics_str + ("；" if topics_str and memo.strip() else "") + memo.strip()).strip()
 
-            save_path = "leads.csv"
-            new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, "", time_pref, memo_full, page_name]
-            write_header = not os.path.exists(save_path)
-            with open(save_path, "a", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                if write_header:
-                    writer.writerow(["created_at","name","phone","email","role","date_pref","time_pref","memo","source_page"])
-                writer.writerow(new_row)
-
             payload = {
-                "created_at": new_row[0], "name": new_row[1], "phone": new_row[2],
-                "email": new_row[3], "role": new_row[4], "date_pref": new_row[5],
-                "time_pref": new_row[6], "memo": new_row[7], "source_page": page_name
+                "created_at": datetime.now().isoformat(),
+                "name": name.strip(),
+                "phone": phone.strip(),
+                "email": email.strip(),
+                "role": role,
+                "date_pref": "",
+                "time_pref": time_pref,
+                "memo": memo_full,
+                "source_page": page_name
             }
             ok, msg = _send_email_notification(payload)
-            _track_event("lead_submit", page_name, "email_ok" if ok else "email_skip")
 
             if ok:
                 st.success("✅ 已收到您的預約，並已發送 Email 通知。")
             else:
                 st.success("✅ 已收到您的預約（未寄信）。")
                 st.caption(msg)
-            st.caption("資料已寫入 `leads.csv`；事件已記錄於 `events.csv`。")
