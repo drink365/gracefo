@@ -198,9 +198,20 @@ with st.form("lead_form", clear_on_submit=True):
 
     agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
     required_ok = all([name.strip(), phone.strip(), email.strip(), role.strip(), time_pref.strip(), agreed, (len(topics) > 0 or memo.strip())])
-    submitted = st.form_submit_button("送出預約", disabled=not required_ok)
+    submitted = st.form_submit_button('送出預約')
 
 if submitted:
+    errors = []
+    if not name.strip(): errors.append('請填寫姓名')
+    if not phone.strip(): errors.append('請填寫手機')
+    if not email.strip(): errors.append('請填寫 Email')
+    if not role.strip(): errors.append('請選擇身份')
+    if not time_pref.strip(): errors.append('請選擇時段偏好')
+    if not (len(topics) > 0 or memo.strip()): errors.append('請至少勾選一個主題或填寫補充說明')
+    if not agreed: errors.append('請勾選同意聯繫')
+    if errors:
+        st.error('；'.join(errors))
+        st.stop()
     topics_str = ", ".join(topics) if topics else ""
     memo_full = (topics_str + ("；" if topics_str and memo.strip() else "") + memo.strip()).strip()
     save_path = "leads.csv"
