@@ -3,6 +3,15 @@ import streamlit as st
 from datetime import datetime
 import csv, os
 
+PRESET_TOPICS = [
+    "跨境資產 / 申報與風險",
+    "股權與投票權安排",
+    "現金流模型 / 家族分配秩序",
+    "贈與節奏 / 保單壓縮策略",
+    "婚前財產隔離 / 家族保障",
+    "教育金 / 創業金安排",
+]
+
 def _send_email_notification(payload: dict):
     try:
         import smtplib
@@ -33,7 +42,6 @@ def _send_email_notification(payload: dict):
         return False, f"寄信失敗：{e}"
 
 def _track_event(event_type: str, page_name: str, detail: str = ""):
-    """Append simple event logs to events.csv for conversion tracking."""
     try:
         save_path = "events.csv"
         write_header = not os.path.exists(save_path)
@@ -43,7 +51,6 @@ def _track_event(event_type: str, page_name: str, detail: str = ""):
                 w.writerow(["ts","event_type","page","detail"])
             w.writerow([datetime.now().isoformat(), event_type, page_name, detail])
     except Exception as e:
-        # best effort logging
         pass
 
 def render_lead_cta(page_name: str):
@@ -55,21 +62,30 @@ def render_lead_cta(page_name: str):
             with col1:
                 name = st.text_input("姓名/稱呼（必填） *")
                 phone = st.text_input("手機（必填） *")
-                email = st.text_input("Email（可選）")
+                email = st.text_input("Email（必填） *")
             with col2:
-                role = st.selectbox("身份（可選）", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
-                time_pref = st.selectbox("時段偏好（可選）", ["不限", "上午", "下午"], index=0)
+                role = st.selectbox("身份（必填） *", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
+                time_pref = st.selectbox("時段偏好（必填） *", ["上午", "下午", "不限"], index=2)
 
-            memo = st.text_area("想先讓我們了解的重點（可選）")
+            st.markdown("**想先讓我們了解的重點（必填）**")
+            topics = st.multiselect("請勾選適用主題（可複選）", PRESET_TOPICS, default=[])
+            memo = st.text_area("補充說明（必填，可加入未列之主題） *", placeholder="例：資產分佈、跨境情境、股權安排…")
+
             agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
 
-            submit_disabled = not (agreed and name.strip() and phone.strip())
-            submitted = st.form_submit_button("送出預約", disabled=submit_disabled)
+            # Validate required fields
+            required_ok = all([
+                name.strip(), phone.strip(), email.strip(), role.strip(), time_pref.strip(), agreed,
+                (len(topics) > 0 or memo.strip())
+            ])
+            submitted = st.form_submit_button("送出預約", disabled=not required_ok)
 
         if submitted:
-            # write lead
+            topics_str = ", ".join(topics) if topics else ""
+            memo_full = (topics_str + ("；" if topics_str and memo.strip() else "") + memo.strip()).strip()
+
             save_path = "leads.csv"
-            new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, "", time_pref, memo.strip(), page_name]
+            new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, "", time_pref, memo_full, page_name]
             write_header = not os.path.exists(save_path)
             with open(save_path, "a", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)

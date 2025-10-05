@@ -172,57 +172,64 @@ def _send_email_notification(payload: dict):
         return False, f"寄信失敗：{e}"
 
 
+
 with st.form("lead_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
         name = st.text_input("姓名/稱呼（必填） *")
         phone = st.text_input("手機（必填） *")
-        email = st.text_input("Email（可選）")
+        email = st.text_input("Email（必填） *")
     with col2:
-        role = st.selectbox("身份（可選）", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
+        role = st.selectbox("身份（必填） *", ["創辦人/一代", "企業管理層", "二代/家族成員", "顧問/會計師/律師", "其他"])
         date_pref = st.date_input("偏好日期（可選）", value=None)
-        time_pref = st.selectbox("時段偏好（可選）", ["不限", "上午", "下午"], index=0)
+        time_pref = st.selectbox("時段偏好（必填） *", ["上午", "下午", "不限"], index=2)
 
-    memo = st.text_area("想先讓我們了解的重點（可選）", placeholder="例：資產分佈、傳承顧慮、跨境情境、股權安排…")
+    st.markdown("**想先讓我們了解的重點（必填）**")
+    PRESET_TOPICS = [
+        "跨境資產 / 申報與風險",
+        "股權與投票權安排",
+        "現金流模型 / 家族分配秩序",
+        "贈與節奏 / 保單壓縮策略",
+        "婚前財產隔離 / 家族保障",
+        "教育金 / 創業金安排",
+    ]
+    topics = st.multiselect("請勾選適用主題（可複選）", PRESET_TOPICS, default=[])
+    memo = st.text_area("補充說明（必填，可加入未列之主題） *", placeholder="例：資產分佈、跨境情境、股權安排…")
+
     agreed = st.checkbox("我同意由永傳家族傳承導師與我聯繫，提供傳承健檢與後續資訊。", value=True)
-
-    submit_disabled = not (agreed and name.strip() and phone.strip())
-    submitted = st.form_submit_button("送出預約", disabled=submit_disabled)
+    required_ok = all([name.strip(), phone.strip(), email.strip(), role.strip(), time_pref.strip(), agreed, (len(topics) > 0 or memo.strip())])
+    submitted = st.form_submit_button("送出預約", disabled=not required_ok)
 
 if submitted:
+    topics_str = ", ".join(topics) if topics else ""
+    memo_full = (topics_str + ("；" if topics_str and memo.strip() else "") + memo.strip()).strip()
     save_path = "leads.csv"
-    new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, str(date_pref) if date_pref else "", time_pref, memo.strip()]
+    new_row = [datetime.now().isoformat(), name.strip(), phone.strip(), email.strip(), role, str(date_pref) if date_pref else "", time_pref, memo_full, "首頁"]
     write_header = not os.path.exists(save_path)
     with open(save_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if write_header:
-            writer.writerow(["created_at","name","phone","email","role","date_pref","time_pref","memo"])
+            writer.writerow(["created_at","name","phone","email","role","date_pref","time_pref","memo","source_page"])
         writer.writerow(new_row)
-    # Email payload
+
     payload = {
-        "created_at": new_row[0],
-        "name": new_row[1],
-        "phone": new_row[2],
-        "email": new_row[3],
-        "role": new_row[4],
-        "date_pref": new_row[5],
-        "time_pref": new_row[6],
-        "memo": new_row[7],
+        "created_at": new_row[0], "name": new_row[1], "phone": new_row[2],
+        "email": new_row[3], "role": new_row[4], "date_pref": new_row[5],
+        "time_pref": new_row[6], "memo": new_row[7], "source_page": "首頁"
     }
-    ok, msg = _send_email_notification(payload)
-    if ok:
-        st.success("✅ 已收到您的預約，並已發送 Email 通知。")
-    else:
-        st.success("✅ 已收到您的預約。")
-        st.caption(msg)
-    st.caption("資料已寫入專案根目錄的 `leads.csv`。若部署於 Streamlit Cloud，建議定期下載備份或串接雲端儲存。")
+    # reuse helper if exists
+    try:
+        from src.utils.lead import _send_email_notification
+        ok, msg = _send_email_notification(payload)
+        if ok:
+            st.success("✅ 已收到您的預約，並已發送 Email 通知。")
+        else:
+            st.success("✅ 已收到您的預約。"); st.caption(msg)
+    except Exception as e:
+        st.success("✅ 已收到您的預約（未寄信）。")
+        st.caption(str(e))
 
-# Show download button if leads.csv exists
-if os.path.exists("leads.csv"):
-    with open("leads.csv", "r", encoding="utf-8") as f:
-        csv_bytes = f.read().encode("utf-8")
-    st.download_button("下載目前的 leads.csv", data=csv_bytes, file_name="leads.csv", mime="text/csv")
-
+    st.caption("資料已寫入專案根目錄的 `leads.csv`。")
 st.markdown("----")
 st.markdown(
     "《影響力》傳承策略平台｜永傳家族辦公室  \n"
