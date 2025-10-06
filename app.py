@@ -1,285 +1,133 @@
-# app.py
-import base64
-from pathlib import Path
+# app.py — 永傳《影響力》傳承平台（首頁：定位 × 體驗 × 信任 × 轉換）
 import streamlit as st
+from pathlib import Path
 from app_config import ensure_page_config
+from modules.cta_section import render_cta
 
-# ✅ 全站統一 favicon、版面配置
+# ✅ 全站統一 config（favicon、wide/centered、收起側邊）
 ensure_page_config()
 
-# ------------------------
-# Page / Paths
-# ------------------------
-APP_TITLE = "永傳家族傳承導師｜影響力傳承平台"
 root = Path(__file__).parent
-fav = root / "favicon.png"
-if fav.exists():
-    pass
-# favicon handled globally by ensure_page_config()
+LOGO = str(root / "logo.png") if (root / "logo.png").exists() else None
 
 # ------------------------
-# Global styles
+# 自訂頂部導覽（因 .streamlit 關閉了左側 pages）
 # ------------------------
-st.markdown(
-    """
-<style>
-/* —— 重要：雙重保險，徹底隱藏左側欄與導覽 —— */
-[data-testid="stSidebar"],
-[data-testid="stSidebarNav"],
-[data-testid="collapsedControl"] { display: none !important; }
-
-/* 隱藏頂部工具列（你原本就有） */
-.stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
-
-/* 版心寬度 */
-[data-testid="stAppViewContainer"] .main .block-container { max-width: 1280px; padding-left: 24px; padding-right: 24px; }
-
-/* Hero 與區塊樣式 */
-.hero h1 { font-size: 42px; font-weight: 800; margin: 0 0 8px; color: #004c4c; letter-spacing: .5px; }
-.hero p  { font-size: 20px; color: #333; line-height: 1.8; margin: 0; }
-.hero .cta { display:inline-block; margin-top: 20px; background:#006666; color:#fff; padding:12px 24px; border-radius:10px; text-decoration:none; font-weight:600; }
-.section { margin-top: 40px; }
-.section h2 { font-size: 28px; margin-bottom: 10px; color: #004c4c; }
-.section p  { color:#333; }
-.section-centered { text-align: center; }
-.section-centered h2 { text-align: center; }
-.section-centered p  { text-align: center; }
-.divider { height: 1px; background: #e9ecef; margin: 36px 0; }
-.cards { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
-.card { width: 320px; padding: 20px; border-radius: 14px; background: #ffffff; box-shadow: 0 2px 14px rgba(0,0,0,.06); text-align: left; }
-.card h3 { margin: 0 0 8px; }
-.card p  { margin: 0; color:#444; line-height:1.7; }
-.footer { display:flex; justify-content:center; align-items:center; gap: 1.25rem; font-size: 14px; color: gray; }
-.footer a { color:#006666; text-decoration: underline; }
-.anchor { position: relative; top: -80px; visibility: hidden; }
-
-/* 「開始規劃」按鈕樣式（適用 st.button） */
-div.stButton > button{
-  background: linear-gradient(135deg, #007777, #009999);
-  color:#fff; font-size:18px; font-weight:600;
-  padding:14px 36px; border:none; cursor:pointer;
-  border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,.15);
-  transition: all .2s ease-in-out;
-}
-div.stButton > button:hover{
-  transform: translateY(-2px);
-  box-shadow:0 6px 14px rgba(0,0,0,.25);
-  background: linear-gradient(135deg, #009999, #00b3b3);
-}
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-# ------------------------
-# Helpers
-# ------------------------
-def load_b64(p: Path) -> str | None:
-    try:
-        with p.open("rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except Exception:
-        return None
-
-logo_b64 = load_b64(root / "logo.png")
-qr_b64   = load_b64(root / "qrcode.png")
-
-# ------------------------
-# Header / Brand
-# ------------------------
-with st.container():
-    if logo_b64:
-        st.markdown(
-            f"""
-            <div style='text-align:center;margin-top:8px;'>
-              <img src='data:image/png;base64,{logo_b64}' width='200' alt='logo'/>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
+def top_nav():
     st.markdown(
         """
-        <div class='hero' style='text-align:center; margin-top: 10px;'>
-          <h1>讓傳承，成為愛的延續</h1>
-          <p>
-            《影響力》是一個結合 <b>AI</b> 與 <b>專業顧問智慧</b> 的傳承策略平台，
-            專為高資產家庭打造，陪你完成 <b>資產配置</b>、<b>稅務節省</b> 與 <b>跨世代安排</b>。
-          </p>
-          <a href="#get-started" class="cta">了解如何開始規劃</a>
+        <style>
+        .nav {display:flex; gap:18px; align-items:center; padding:10px 6px; border-bottom:1px solid #eee;}
+        .nav a {text-decoration:none;}
+        .brand {font-weight:700; font-size:16px;}
+        .nav .spacer {flex:1}
+        .btn {padding:8px 12px; border-radius:10px; border:1px solid #e6e6e6;}
+        .btn-primary {border-color:#145DA0;}
+        </style>
+        <div class="nav">
+          <div class="brand">永傳家族傳承導師｜影響力傳承平台</div>
+          <div class="spacer"></div>
+          <a class="btn" href="/" target="_self">首頁</a>
+          <a class="btn" href="/3_about" target="_self">關於我們</a>
+          <a class="btn" href="/2_cases" target="_self">客戶故事</a>
+          <a class="btn" href="/0_tools" target="_self">工具</a>
+          <a class="btn btn-primary" href="/4_contact" target="_self">預約規劃</a>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+top_nav()
+
 # ------------------------
-# 這個平台能幫你什麼？
+# 首屏 HERO（定位 × 價值 × 雙 CTA）
 # ------------------------
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    """
-    <div class='section section-centered'>
-      <h2>這個平台能幫你什麼？</h2>
-      <p>我們將顧問經驗數位化，讓你在 10 分鐘內看見方向：</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+col_logo, col_hero = st.columns([1, 3], vertical_alignment="center")
+with col_logo:
+    if LOGO:
+        st.image(LOGO, use_container_width=True)
+with col_hero:
+    st.markdown("## 讓關心的人，在需要時真的被照顧到。")
+    st.markdown(
+        "專為高資產家庭設計的傳承策略與保障結構，**整合法律、稅務、保險**，打造家族的**永續現金流**。"
+    )
+    st.markdown(
+        """
+        <div style="display:flex; gap:12px; margin:8px 0 4px 0;">
+          <a class="btn-primary" href="/5_estate_tax" target="_self"
+             style="padding:10px 14px; border:1px solid #145DA0; border-radius:10px; text-decoration:none;">
+             5題測出傳承準備度
+          </a>
+          <a class="btn-secondary" href="/4_contact" target="_self"
+             style="padding:10px 14px; border:1px solid #e6e6e6; border-radius:10px; text-decoration:none;">
+             預約 1 對 1 規劃
+          </a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+st.divider()
 
-st.markdown("""
-<div class='cards'>
-  <div class='card'>
-    <h3>🎯 立即診斷</h3>
-    <p>以互動問答快速盤點現況，找出你的關鍵風險與優先解題。</p>
-  </div>
-  <div class='card'>
-    <h3>🧩 規劃藍圖</h3>
-    <p>輸入關鍵參數，即可生成專屬「傳承地圖」與行動建議。</p>
-  </div>
-  <div class='card'>
-    <h3>🤝 顧問協助</h3>
-    <p>需要更深入？可直接預約顧問，完成商品配置、法稅與文件安排。</p>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# --- 開始專屬旅程（anchor 已就緒） ---
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    """
-    <div id='get-started' class='section section-centered'>
-      <h2>開始你的專屬旅程</h2>
-      <p style='font-size:18px; color:#333; margin-bottom:28px;'>
-        打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。
-      </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# 🔹按鈕「穩定置中」：中欄承載（跨版本最不會跑版）
-c1, c2, c3 = st.columns([1,1,1])
+# ------------------------
+# 工具入口（單一路徑：體驗 → 結果 → CTA → 預約）
+# ------------------------
+st.markdown("### 🔧 工具入口")
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.markdown("**傳承準備度**")
+    st.write("用 5 題快速了解您的傳承風險與優先順序。")
+    st.link_button("開始測驗", "/5_estate_tax")
 with c2:
-    if st.button("開始規劃", key="go_plan"):
-        st.switch_page("pages/client_home.py")
+    st.markdown("**保單策略模擬**")
+    st.write("試算保障結構與受益人設計，評估傳承確定性。")
+    st.link_button("開啟模擬", "/8_insurance_strategy")
+with c3:
+    st.markdown("**風險檢查**")
+    st.write("檢查資產分布、繼承順序與稅負敏感度。")
+    st.link_button("立即檢查", "/9_risk_check")
+
+st.info("建議路徑：先測驗 → 看結果建議 → 送出預約，我們會針對您的情況提出專屬方案。")
+
+st.divider()
 
 # ------------------------
-# 為什麼選擇《影響力》？
+# 信任與價值（權威三角＋生活案例）
 # ------------------------
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    "<div class='section section-centered'><h2>為什麼選擇《影響力》？</h2></div>",
-    unsafe_allow_html=True,
-)
-st.markdown(
-    """
-<div class='cards'>
-  <div class='card'>
-    <h3>🏅 專業團隊</h3>
-    <p>永傳家族辦公室整合國際律師、會計師、財稅與保險專家，共同設計家族方案。</p>
-  </div>
-  <div class='card'>
-    <h3>⚡ 提案效率</h3>
-    <p>以模組化與情境模板，縮短 70% 的溝通時間，讓重點一目了然。</p>
-  </div>
-  <div class='card'>
-    <h3>🔐 隱私與合規</h3>
-    <p>以最小必要原則僅蒐集必要資訊，強化數據保護與法稅合規。</p>
-  </div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-# ------------------------
-# 品牌使命
-# ------------------------
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("### 🤝 我們是誰")
 st.markdown(
     """
-<div class='section section-centered'>
-  <h2>品牌使命</h2>
-  <p>
-    我們相信，每個家庭的成功都值得被延續。<br/>
-    《影響力》致力於推動財富傳承教育，以專業顧問與科技工具，
-    協助家族以更低成本、更高效率，完成愛與責任的交棒。
-  </p>
-</div>
-""",
-    unsafe_allow_html=True,
+**永傳家族傳承導師**｜專注高資產家族的跨世代傳承設計  
+用 **法律 × 稅務 × 保險** 的整合能力，將抽象風險化為可執行的保障結構。
+
+- 🇺🇸 美國會計師（CPA），投資銀行與上市公司管理背景  
+- 家族辦公室創辦人：以顧問思維與科技工具，設計可落地的傳承方案  
+- 勞動部與業界授課經驗：企業接班、傳承策略、稅務與保單應用  
+"""
 )
 
-# ▶ 2 分鐘了解（放品牌使命之後）
-with st.expander("▶ 2 分鐘了解《影響力》（永傳科創學院）", expanded=False):
-    st.image(
-        "https://yt3.googleusercontent.com/agR4iDz3j-piTsAW-XGHojMsxxXs6DV3e0pRFV1zEYIYyI4sTmlci3fDtMR0xF3cJwVG_zm5EQ=w2276-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
-        use_container_width=True,
+st.markdown("### 💬 客戶故事（匿名）")
+with st.expander("▶ 90 歲長輩的安心交棒"):
+    st.write(
+        "在二代準備再婚、三代尚未接班的情況下，我們以保單與受益人設計，達成資產指定與稅負預備，確保第三代教育基金與家族現金流。"
     )
-    st.markdown(
-        "[前往永傳科創學院 YouTube 頻道 🎥](https://www.youtube.com/@gracefo)",
-        unsafe_allow_html=True,
+with st.expander("▶ 跨境資產的稅務整理"):
+    st.write(
+        "針對台灣＋海外資產，先確立法律／稅務的合規路徑，再用保單壓縮與信託替代機制，創造可預期的現金流。"
     )
 
-# ------------------------
-# 客戶回饋
-# ------------------------
-with st.expander("💬 來自客戶與顧問的回饋", expanded=False):
-    st.markdown("- 「有結構、有溫度，讓家人快速形成共識。」")
-    st.markdown("- 「把保單、稅務與信託用同一張圖講清楚，效率大幅提升。」")
+st.caption("註：案例均經匿名化處理，保護客戶隱私。")
+
+st.divider()
 
 # ------------------------
-# Final CTA（兩顆按鈕版）
+# 品牌使命（溫暖而堅定）
 # ------------------------
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    """
-<div class='section section-centered'>
-  <h2>準備好開始你的家族傳承旅程了嗎？</h2>
-  <p>留下聯繫方式，或直接以右下角 QR code 與我們聯繫。</p>
-</div>
-""",
-    unsafe_allow_html=True,
+st.markdown("### 🌱 品牌使命")
+st.write(
+    "我們相信，每個家庭的成功都值得被延續。《影響力》致力於推動財富傳承教育，以專業顧問與科技工具，協助家族以更低成本、更高效率，完成愛與責任的交棒。"
 )
 
-cols = st.columns([1,1,1])
-with cols[1]:
-    st.markdown(
-        """
-        <div style='display:flex;gap:12px;justify-content:center;align-items:center;'>
-          <a href='#get-started' class='cta' 
-             style='background:#006666;color:#fff;
-             padding:10px 18px;border-radius:10px;
-             text-decoration:none;'>馬上開始</a>
-          <a href='mailto:123@gracefo.com' class='cta' 
-             style='background:#004c4c;color:#fff;
-             padding:10px 18px;border-radius:10px;
-             text-decoration:none;'>預約顧問</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-if qr_b64:
-    st.markdown(
-        f"""
-        <div style='text-align:center;margin-top:14px;'>
-          <img src='data:image/png;base64,{qr_b64}' width='120' alt='contact-qr'/>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
 # ------------------------
-# Footer
+# 全站 CTA（頁尾固定出現）
 # ------------------------
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    """
-    <div class='footer'>
-      <a href='?' >《影響力》傳承策略平台</a>
-      <a href='https://gracefo.com' target='_blank'>永傳家族辦公室</a>
-      <a href='mailto:123@gracefo.com'>123@gracefo.com</a>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+render_cta()
