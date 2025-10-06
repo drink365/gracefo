@@ -1,3 +1,4 @@
+# app.py
 import base64
 from pathlib import Path
 import streamlit as st
@@ -22,9 +23,18 @@ if fav.exists():
 st.markdown(
     """
 <style>
-[data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
+/* —— 重要：雙重保險，徹底隱藏左側欄與導覽 —— */
+[data-testid="stSidebar"],
+[data-testid="stSidebarNav"],
+[data-testid="collapsedControl"] { display: none !important; }
+
+/* 隱藏頂部工具列（你原本就有） */
 .stAppDeployButton, button[kind="header"], [data-testid="BaseButton-header"], [data-testid="stToolbar"] { display: none !important; }
+
+/* 版心寬度 */
 [data-testid="stAppViewContainer"] .main .block-container { max-width: 1280px; padding-left: 24px; padding-right: 24px; }
+
+/* Hero 與區塊樣式 */
 .hero h1 { font-size: 42px; font-weight: 800; margin: 0 0 8px; color: #004c4c; letter-spacing: .5px; }
 .hero p  { font-size: 20px; color: #333; line-height: 1.8; margin: 0; }
 .hero .cta { display:inline-block; margin-top: 20px; background:#006666; color:#fff; padding:12px 24px; border-radius:10px; text-decoration:none; font-weight:600; }
@@ -147,7 +157,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 🔹按鈕「穩定置中」：用中欄承載（跨版本最不會跑版）
+# 🔹按鈕「穩定置中」：中欄承載（跨版本最不會跑版）
 c1, c2, c3 = st.columns([1,1,1])
 with c2:
     if st.button("開始規劃", key="go_plan"):
