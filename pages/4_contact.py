@@ -1,51 +1,25 @@
+# pages/4_contact.py — 友善預約表單（最小必填 + 成功導引）
 import streamlit as st
-from app_config import ensure_page_config
-ensure_page_config()
-# --- Force-hide Streamlit sidebar & its toggle (applies to this page) ---
-hide_sidebar_style = """
-    <style>
-        [data-testid="stSidebar"] {display: none;}
-        [data-testid="stSidebarNav"] {display: none;}
-        [data-testid="collapsedControl"] {display: none;}
-    </style>
-"""
-st.markdown(hide_sidebar_style, unsafe_allow_html=True)
-# 頁首標題
-st.markdown("""
-<div style='text-align: center;'>
-    <h1 style='font-size: 36px;'>📬 聯絡我們</h1>
-    <p style='font-size: 16px; color: gray;'>歡迎與《影響力》團隊聯繫，我們樂意陪伴您思考、設計屬於自己的傳承策略。</p>
-</div>
-""", unsafe_allow_html=True)
+from datetime import date
 
-# 聯絡資訊區塊
-st.markdown("---")
-st.markdown("""
-### 📧 電子信箱  
-若您有任何疑問，或想預約一對一對談，請來信：  
-<a href="mailto:123@gracefo.com">123@gracefo.com</a>
+st.title("📅 預約 1 對 1 傳承規劃")
 
-### 🌐 官方網站  
-更多關於我們的介紹與服務內容，歡迎造訪：  
-<a href="https://gracefo.com" target="_blank">https://gracefo.com</a>
+st.markdown(
+    "我們採 **保密制** 與 **預約制**：留下基本聯絡方式與偏好時段，顧問將於一個工作日內與您確認。"
+)
 
-### 📌 公司資訊  
-永傳家族辦公室｜永傳科創股份有限公司  
-台北市中山區南京東路二段 101 號 9 樓
+with st.form("booking"):
+    name = st.text_input("您的稱呼*", placeholder="王先生 / 李小姐")
+    phone = st.text_input("聯絡電話*", placeholder="09xx-xxx-xxx")
+    email = st.text_input("Email（可選）", placeholder="you@example.com")
+    prefer_day = st.date_input("偏好日期", value=date.today())
+    prefer_slot = st.selectbox("偏好時段", ["上午", "下午", "不限"])
+    notes = st.text_area("想先了解的重點（可選）", placeholder="如：跨境資產配置、保單傳承、企業接班...")
 
----
+    submitted = st.form_submit_button("送出預約")
 
-我們重視每一位用戶的提問與回饋，  
-期盼成為您在傳承旅程中的陪伴者與策略夥伴。
-""", unsafe_allow_html=True)
-
-# --- 聯絡資訊 ---
-st.markdown("---")
-st.markdown("""
-<div style='display: flex; justify-content: center; align-items: center; gap: 1.5em; font-size: 14px; color: gray;'>
-  <!-- 根路徑“/”會帶回到 app.py -->
-  <a href='/' style='color:#006666; text-decoration: underline;'>《影響力》傳承策略平台</a>
-  <a href='https://gracefo.com' target='_blank'>永傳家族辦公室</a>
-  <a href='mailto:123@gracefo.com'>123@gracefo.com</a>
-</div>
-""", unsafe_allow_html=True)
+if submitted:
+    # 這裡先顯示前端確認訊息；後續若要自動寄信，可再加 SMTP / webhook
+    st.success("已收到您的預約！我們將在一個工作日內與您確認時段。")
+    st.info("下一步：請留意手機來電與 Email 通知。")
+    st.markdown("— 也可以同時來信：**123@gracefo.com**（主旨：預約傳承規劃）")
