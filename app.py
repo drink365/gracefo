@@ -132,9 +132,7 @@ st.markdown(
 # ▼▼ 修正縮排：以下區塊原本多了一階縮排，造成 IndentationError ▼▼
 st.markdown(
     """
-    <div class='card'>
-      <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
-    </div>
+    <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
     """,
     unsafe_allow_html=True,
 )
