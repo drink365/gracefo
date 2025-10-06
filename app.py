@@ -129,32 +129,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown(
-        """
-        <div class='card'>
-          <h3>🙋 我是客戶</h3>
-          <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("開始規劃", use_container_width=True):
-        st.switch_page("pages/client_home.py")
-
-with col2:
-    st.markdown(
-        """
-        <div class='card'>
-          <h3>🧑‍💼 我是顧問</h3>
-          <p>加入顧問夥伴計畫：用 AI 與模組化工具，提升提案速度與成交率。</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("了解合作", use_container_width=True):
-        st.switch_page("pages/advisor_home.py")
+st.markdown(
+    """
+    <div class='card'>
+        <h3>🙋 我是客戶</h3>
+        <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+if st.button("開始規劃", use_container_width=True):
+    st.switch_page("pages/client_home.py")
 
 # ------------------------
 # 為什麼選擇《影響力》？
