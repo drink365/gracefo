@@ -120,21 +120,40 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------
-# 開始規劃
+# 開始專屬旅程（置中＋強化按鈕）
 # ------------------------
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(
     """
     <div class='section section-centered'>
       <h2>開始你的專屬旅程</h2>
-      <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
+      <p style='font-size:18px; color:#333; margin-bottom:28px;'>
+        打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。
+      </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-c1, c2, c3 = st.columns([1,1,1])
-with c2:
+st.markdown("""
+<style>
+.stButton > button {
+  background: linear-gradient(135deg, #007777, #009999);
+  color: #fff; font-size:18px; font-weight:600;
+  padding: 14px 36px; border: none;
+  border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  transition: all 0.2s ease-in-out;
+}
+.stButton > button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+  background: linear-gradient(135deg, #009999, #00b3b3);
+}
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1,1,1])
+with col2:
     if st.button("開始規劃"):
         st.switch_page("pages/client_home.py")
 
