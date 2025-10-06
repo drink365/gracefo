@@ -129,14 +129,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
-    <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
-    """,
-    unsafe_allow_html=True,
-)
-if st.button("開始規劃", use_container_width=True):
-    st.switch_page("pages/client_home.py")
+st.markdown("""
+<div class='section section-centered'>
+  <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
+</div>
+""", unsafe_allow_html=True)
+
+c1, c2, c3 = st.columns([1,1,1])
+with c2:
+    if st.button("開始規劃"):
+        st.switch_page("pages/client_home.py")
 
 # ------------------------
 # 為什麼選擇《影響力》？
