@@ -19,6 +19,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+
+
+# --- 快速導流：3分鐘評估 ---
+st.markdown("### ✅ 從這裡開始：3 分鐘看見你的重點")
+st.write("回答幾個簡單問題，我們會先生成「傳承重點摘要」，再引導你使用對的工具。")
+if st.button("➡️ 開始 3 分鐘評估", key="go_quick_assessment"):
+    # 先導到既有的評估頁（可改成 pages/1_coach.py）
+    st.switch_page("pages/9_risk_check.py")
+
 st.markdown("---")
 
 # --- 工具導覽 ---
@@ -59,6 +68,23 @@ st.markdown("#### 🏠 6. 不動產稅負試算")
 st.write("協助您試算未來不動產買賣或贈與/繼承的稅負情境。")
 if st.button("🏠 AI秒算房產傳承稅負", key="go_real_estate_tax_client"):
         st.switch_page("pages/10_property.py")
+
+
+# --- 寄送我的初步報告（留資） ---
+st.markdown("---")
+st.markdown("### 📧 寄送我的初步報告")
+with st.form("lead_capture_form"):
+    name  = st.text_input("姓名*", max_chars=40)
+    email = st.text_input("Email*", max_chars=80)
+    agree = st.checkbox("我了解此評估僅供初步參考，實際方案需由專業人士確認。", value=True)
+    submitted = st.form_submit_button("寄送給我")
+    if submitted:
+        if not name or not email or not agree:
+            st.warning("請完整填寫並勾選同意。")
+        else:
+            st.success("已接收，初步報告將以Email寄送給您。")
+            st.info("想更快完成？您也可以直接預約 30 分鐘諮詢。")
+            # 可改為 st.switch_page("pages/booking.py")
 
 # --- 聯絡資訊 ---
 st.markdown("---")
