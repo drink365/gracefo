@@ -82,7 +82,6 @@ with st.container():
             《影響力》是一個結合 <b>AI</b> 與 <b>專業顧問智慧</b> 的傳承策略平台，
             專為高資產家庭打造，陪你完成 <b>資產配置</b>、<b>稅務節省</b> 與 <b>跨世代安排</b>。
           </p>
-          <a href="#get-started" class="cta">了解如何開始規劃</a>
         </div>
         """,
         unsafe_allow_html=True,
