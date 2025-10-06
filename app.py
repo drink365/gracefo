@@ -128,7 +128,6 @@ st.markdown(
     "<div class='section section-centered'><h2>開始你的專屬旅程</h2></div>",
     unsafe_allow_html=True,
 )
-
 st.markdown("""
 <div class='section section-centered'>
   <p>打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。</p>
