@@ -133,27 +133,32 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 🔹置中＋漸層樣式（適用 st.button）
 st.markdown("""
 <style>
-div.stButton { text-align: center; }  /* 讓容器本身置中 */
-div.stButton > button {
-  background: linear-gradient(135deg, #007777, #009999);
-  color: #fff; font-size:18px; font-weight:600;
-  padding: 14px 36px; border: none; cursor: pointer;
-  border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  transition: all 0.2s ease-in-out;
-  display: inline-block;
+/* 讓 st.button 的外層容器改為 flex 並水平置中 */
+div.stButton{
+  display: flex;
+  justify-content: center;
+  margin: 0;           /* 清掉可能的外距 */
 }
-div.stButton > button:hover {
+
+/* 按鈕樣式（漸層＋陰影＋hover 效果） */
+div.stButton > button{
+  background: linear-gradient(135deg, #007777, #009999);
+  color:#fff; font-size:18px; font-weight:600;
+  padding:14px 36px; border:none; cursor:pointer;
+  border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,.15);
+  transition: all .2s ease-in-out;
+}
+div.stButton > button:hover{
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+  box-shadow:0 6px 14px rgba(0,0,0,.25);
   background: linear-gradient(135deg, #009999, #00b3b3);
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Streamlit 按鈕（可正確觸發頁面跳轉）
+# 保持這行就能跳頁
 if st.button("開始規劃", key="go_plan"):
     st.switch_page("pages/client_home.py")
 
