@@ -1,12 +1,3 @@
-# app.py — 《影響力》傳承策略平台（客戶版首頁）
-# 特色：
-# 1) 單一受眾：高資產家族（移除顧問端用語與入口）
-# 2) 單一主 CTA：🧭 5 分鐘傳承檢測（建議 pages/01_傳承風險檢測.py）
-# 3) 次要 CTA：下載白皮書（Email 換名單 leads.csv）
-# 4) 信任模塊：Grace 簡介＋合作/媒體 Logo 區（可替換）
-# 5) 案例卡：情境 → 作法 → 成效（匿名）
-# 6) 統一品牌頁尾（依你的規範 #38）
-# 7) GA/Meta 追蹤碼佔位（components.html 注入）
 
 import os
 import uuid
@@ -17,29 +8,24 @@ from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 
-# -------------------------
-# 基本設定
-# -------------------------
 st.set_page_config(
     page_title="《影響力》傳承策略平台｜永傳家族辦公室",
     page_icon="💛",
     layout="wide"
 )
 
-# 品牌色票（可依你的 Style Guide 調整）
-PRIMARY = "#145DA0"   # deep sea blue
-ACCENT  = "#F9A826"   # sunshine gold
+PRIMARY = "#145DA0"
+ACCENT  = "#F9A826"
 BG      = "#F7FAFC"
 TEXT    = "#1A202C"
 
-# 靜態儲存：名單收集（Streamlit Cloud 可寫入 /mount 或 /tmp，本地用 ./data）
 DATA_DIR = Path("./data")
 DATA_DIR.mkdir(exist_ok=True)
 LEADS_CSV = DATA_DIR / "leads.csv"
 
-# -------------------------
-# 全域樣式（隱藏預設選單/頁腳，優化字體與區塊）
-# -------------------------
+if Path("assets/logo.png").exists():
+    st.logo("assets/logo.png")
+
 st.markdown(
     f"""
     <style>
@@ -48,11 +34,8 @@ st.markdown(
         color: {TEXT};
         font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
       }}
-      /* 隱藏右上角的 Streamlit 漢堡與頁腳 */
       #MainMenu {{visibility: hidden;}}
       footer {{visibility: hidden;}}
-      header {{visibility: visible;}}
-      /* 主標題區塊 */
       .hero {{
         padding: 56px 24px;
         border-radius: 24px;
@@ -142,14 +125,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# -------------------------
-# GA / Meta Pixel 追蹤碼佔位（請替換 ID）
-# -------------------------
-GA_ID = os.getenv("GA_MEASUREMENT_ID", "")  # 例如 "G-XXXXXXX"
+GA_ID = os.getenv("GA_MEASUREMENT_ID", "")
 META_PIXEL_ID = os.getenv("META_PIXEL_ID", "")
 
 ga_script = f"""
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -160,7 +139,6 @@ ga_script = f"""
 """ if GA_ID else ""
 
 meta_pixel = f"""
-<!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
 {{if(f.fbq)return;n=f.fbq=function(){{n.callMethod?
@@ -176,26 +154,20 @@ fbq('track', 'PageView');
 <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id={META_PIXEL_ID}&ev=PageView&noscript=1"
 /></noscript>
-<!-- End Meta Pixel Code -->
 """ if META_PIXEL_ID else ""
 
 if ga_script or meta_pixel:
     components.html(ga_script + meta_pixel, height=0, width=0)
 
-# -------------------------
-# 公用：名單寫入
-# -------------------------
 def append_lead(email: str, name: str = "", note: str = "", source: str = "whitepaper"):
     is_new = not LEADS_CSV.exists()
     with open(LEADS_CSV, mode="a", newline="", encoding="utf-8") as f:
+        import csv
         writer = csv.writer(f)
         if is_new:
             writer.writerow(["id", "created_at", "name", "email", "note", "source"])
         writer.writerow([str(uuid.uuid4()), datetime.now().isoformat(), name.strip(), email.strip(), note.strip(), source])
 
-# -------------------------
-# 頁面主體
-# -------------------------
 col_hero, col_blank = st.columns([7, 5])
 with col_hero:
     st.markdown(
@@ -209,9 +181,8 @@ with col_hero:
           <div class="btn-row">
         """, unsafe_allow_html=True
     )
-    # 主 CTA：導向你的檢測頁（請將檔名對應你的 pages）
     st.page_link("pages/01_傳承風險檢測.py", label="🧭 立即開始 5 分鐘傳承檢測", icon="🧭")
-    # 次 CTA：白皮書換名單（彈出 form）
+
     with st.popover("📗 下載《高資產傳承 7 大盲點》", use_container_width=False):
         with st.form("whitepaper_form", clear_on_submit=True):
             name = st.text_input("稱呼（可不填）", key="lead_name")
@@ -226,7 +197,6 @@ with col_hero:
                 else:
                     append_lead(email=email, name=name, source="whitepaper")
                     st.success("已收到！白皮書下載連結已建立。")
-                    # 你可替換為實際檔案連結；目前給一個示意下載（同站內靜態檔可用 st.download_button）
                     st.markdown("👉 請留意您的信箱；若未收到，請檢查垃圾郵件匣或與我們聯絡。")
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -240,9 +210,6 @@ with col_hero:
         """, unsafe_allow_html=True
     )
 
-# -------------------------
-# 區塊：如何運作
-# -------------------------
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.markdown('<div class="sec-title">如何運作</div>', unsafe_allow_html=True)
 st.markdown(
@@ -256,9 +223,6 @@ st.markdown(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------------
-# 區塊：您將獲得
-# -------------------------
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.markdown('<div class="sec-title">您將獲得</div>', unsafe_allow_html=True)
 st.markdown(
@@ -271,12 +235,8 @@ st.markdown(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------------
-# 區塊：信任與專業
-# -------------------------
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.markdown('<div class="sec-title">信任與專業</div>', unsafe_allow_html=True)
-
 c1, c2 = st.columns([5,7])
 with c1:
     st.markdown(
@@ -285,7 +245,7 @@ with c1:
         美國會計師（CPA）｜永傳家族辦公室創辦人  
         曾任投資銀行主管、上市公司高管、科技創業者  
         長年授課於勞動部與各協會，專注高資產家族傳承  
-        
+
         > 「讓關心的人，在需要時真的被照顧到。」
         """)
 with c2:
@@ -300,9 +260,6 @@ with c2:
     )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------------
-# 區塊：案例（匿名）
-# -------------------------
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.markdown('<div class="sec-title">真實情境（匿名示例）</div>', unsafe_allow_html=True)
 st.markdown(
@@ -328,18 +285,12 @@ st.markdown(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------------
-# 最終 CTA
-# -------------------------
 st.markdown('<div class="section cta-final">', unsafe_allow_html=True)
 st.markdown("### 現在開始，為家族打造確定性的傳承方案")
 st.page_link("pages/01_傳承風險檢測.py", label="🧭 立即開始 5 分鐘傳承檢測", icon="🧭")
 st.markdown('<div class="small-note">或先下載白皮書了解方向，再與我們對話。</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------------
-# 頁尾（依你的統一規範 #38）
-# -------------------------
 st.markdown(
     """
     <div class="footer">
@@ -348,16 +299,3 @@ st.markdown(
     </div>
     """, unsafe_allow_html=True
 )
-
-# -------------------------
-# 額外導覽（可視需要保留或移除）
-# 你可在左側「多頁應用」中提供其他工具頁：
-#  - pages/01_傳承風險檢測.py   ← 主檢測入口（主 CTA 連到此）
-#  - pages/02_遺產稅試算.py
-#  - pages/03_保單策略地圖.py
-# 若你想在首頁提供快速入口，也可在下方加上 page_link 。
-# -------------------------
-with st.expander("快速入口（可選，僅示意）", expanded=False):
-    st.page_link("pages/01_傳承風險檢測.py", label="🧭 傳承風險檢測")
-    st.page_link("pages/02_遺產稅試算.py", label="🧮 遺產稅試算")
-    st.page_link("pages/03_保單策略地圖.py", label="📦 保單策略地圖")
