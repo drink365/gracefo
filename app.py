@@ -119,37 +119,42 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ------------------------
-# 開始專屬旅程（置中＋強化按鈕＋anchor）
-# ------------------------
+# --- 開始專屬旅程 ---
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div id='get-started' class='section section-centered'>
+      <h2>開始你的專屬旅程</h2>
+      <p style='font-size:18px; color:#333; margin-bottom:28px;'>
+        打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。
+      </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
+# 置中 + 漸層樣式（作用於 st.button）
 st.markdown("""
-<div id='get-started' class='section section-centered'>
-  <h2>開始你的專屬旅程</h2>
-  <p style='font-size:18px; color:#333; margin-bottom:28px;'>
-    打造專屬傳承藍圖、試算稅務影響、安排保單與信託結構。
-  </p>
-  <div style='text-align:center; margin-top:20px;'>
-    <button class='cta-btn' onclick="window.parent.location.href='?page=pages/client_home.py'">開始規劃</button>
-  </div>
-</div>
-
 <style>
-.cta-btn {
+div.stButton > button {
   background: linear-gradient(135deg, #007777, #009999);
   color: #fff; font-size:18px; font-weight:600;
-  padding: 14px 36px; border: none; cursor:pointer;
+  padding: 14px 36px; border: none; cursor: pointer;
   border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
   transition: all 0.2s ease-in-out;
+  display: block; margin: 0 auto;     /* 置中關鍵 */
 }
-.cta-btn:hover {
+div.stButton > button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0,0,0,0.25);
   background: linear-gradient(135deg, #009999, #00b3b3);
 }
 </style>
 """, unsafe_allow_html=True)
+
+# 使用 Streamlit 按鈕（可正確觸發 switch_page）
+if st.button("開始規劃", key="go_plan"):
+    st.switch_page("pages/client_home.py")
 
 # ------------------------
 # 為什麼選擇《影響力》？
