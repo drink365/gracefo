@@ -119,7 +119,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 開始專屬旅程 ---
+# --- 開始專屬旅程（anchor 已就緒） ---
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(
     """
@@ -133,16 +133,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 置中 + 漸層樣式（作用於 st.button）
+# 🔹置中＋漸層樣式（適用 st.button）
 st.markdown("""
 <style>
+div.stButton { text-align: center; }  /* 讓容器本身置中 */
 div.stButton > button {
   background: linear-gradient(135deg, #007777, #009999);
   color: #fff; font-size:18px; font-weight:600;
   padding: 14px 36px; border: none; cursor: pointer;
   border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
   transition: all 0.2s ease-in-out;
-  display: block; margin: 0 auto;     /* 置中關鍵 */
+  display: inline-block;
 }
 div.stButton > button:hover {
   transform: translateY(-2px);
@@ -152,7 +153,7 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# 使用 Streamlit 按鈕（可正確觸發 switch_page）
+# Streamlit 按鈕（可正確觸發頁面跳轉）
 if st.button("開始規劃", key="go_plan"):
     st.switch_page("pages/client_home.py")
 
