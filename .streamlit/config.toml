@@ -1,0 +1,6 @@
+# .streamlit/config.toml
+[client]
+showSidebarNavigation = false   # ← 完全關閉左側的 pages 自動導覽
+
+[theme]
+base = "light"
