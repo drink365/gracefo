@@ -82,7 +82,7 @@ with st.container():
             《影響力》是一個結合 <b>AI</b> 與 <b>專業顧問智慧</b> 的傳承策略平台，
             專為高資產家庭打造，陪你完成 <b>資產配置</b>、<b>稅務節省</b> 與 <b>跨世代安排</b>。
           </p>
-          <a href="#get-started" class="cta">了解如何開始規劃</a>
+          <a href="#get-started" class="cta">開始我的傳承評估</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -113,8 +113,8 @@ st.markdown("""
     <p>輸入關鍵參數，即可生成專屬「傳承地圖」與行動建議。</p>
   </div>
   <div class='card'>
-    <h3>🤝 顧問協助</h3>
-    <p>需要更深入？可直接預約顧問，完成商品配置、法稅與文件安排。</p>
+    <h3>🤝 專人協作</h3>
+    <p>需要更深入？可安排專人與您協作，完成商品配置、法稅與文件安排。</p>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -125,7 +125,7 @@ st.markdown("""
 st.markdown("<span id='get-started' class='anchor'>&nbsp;</span>", unsafe_allow_html=True)
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(
-    "<div class='section section-centered'><h2>選擇你的角色，開始專屬旅程</h2></div>",
+    "<div class='section section-centered'><h2>開始你的專屬旅程</h2></div>",
     unsafe_allow_html=True,
 )
 
@@ -143,20 +143,7 @@ with col1:
     if st.button("開始規劃", use_container_width=True):
         st.switch_page("pages/client_home.py")
 
-with col2:
-    st.markdown(
-        """
-        <div class='card'>
-          <h3>🧑‍💼 我是顧問</h3>
-          <p>加入顧問夥伴計畫：用 AI 與模組化工具，提升提案速度與成交率。</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("了解合作", use_container_width=True):
-        st.switch_page("pages/advisor_home.py")
-
-# ------------------------
+ ------------------------
 # 為什麼選擇《影響力》？
 # ------------------------
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)

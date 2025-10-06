@@ -15,4 +15,11 @@ def ensure_page_config():
         except Exception:
             # In case a subpage ran first and already set config, ignore
             pass
+        
+        st.markdown("""
+        <style>
+        [data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none !important; }
+        .stAppDeployButton, button[kind="header"], [data-testid="stToolbar"] { display: none !important; }
+        </style>
+        """, unsafe_allow_html=True)
         st.session_state["_page_config_done"] = True
